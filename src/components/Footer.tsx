@@ -1,12 +1,26 @@
 import { Zap, Mail, Instagram, Twitter } from "lucide-react";
+import { NewsletterForm } from "./NewsletterForm";
 
 export const Footer = () => {
   return (
-    <footer className="relative bg-upside-down border-t border-primary/20">
+    <footer className="relative bg-upside-down border-t border-primary/20 mb-16">
       {/* Red glow */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-red/50 to-transparent" />
       
       <div className="container mx-auto px-4 py-12 md:py-16">
+        {/* Newsletter Section */}
+        <div className="bg-card/30 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-border/50 mb-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <h3 className="font-title text-2xl md:text-3xl text-foreground mb-2">
+              ÚNETE A <span className="text-neon-red">STRANGER FANS</span>
+            </h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              Recibe las últimas noticias, eventos y contenido exclusivo directamente en tu email.
+            </p>
+            <NewsletterForm />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="lg:col-span-2">
@@ -22,13 +36,13 @@ export const Footer = () => {
               Un proyecto hecho por fans, para fans.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-red/20 hover:text-neon-red transition-colors">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-red/20 hover:text-neon-red transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-cyan/20 hover:text-neon-cyan transition-colors">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-cyan/20 hover:text-neon-cyan transition-colors">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-magenta/20 hover:text-neon-magenta transition-colors">
+              <a href="mailto:contacto@strangerfans.es" className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-magenta/20 hover:text-neon-magenta transition-colors">
                 <Mail className="w-5 h-5" />
               </a>
             </div>
@@ -38,10 +52,12 @@ export const Footer = () => {
           <div>
             <h4 className="font-title text-lg text-foreground mb-4">Explorar</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Noticias</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Eventos</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Merchandising</a></li>
-              <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Comunidad</a></li>
+              <li><a href="#noticias" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Noticias</a></li>
+              <li><a href="#eventos" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Eventos</a></li>
+              <li><a href="#merch" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Merchandising</a></li>
+              <li><a href="#comunidad" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Comunidad</a></li>
+              <li><a href="#ia" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">IA Creativa</a></li>
+              <li><a href="#musica" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Música</a></li>
             </ul>
           </div>
 
@@ -53,6 +69,7 @@ export const Footer = () => {
               <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Privacidad</a></li>
               <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Cookies</a></li>
               <li><a href="#" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">DMCA</a></li>
+              <li><a href="#contacto" className="text-sm text-muted-foreground hover:text-neon-red transition-colors">Contacto</a></li>
             </ul>
           </div>
         </div>
