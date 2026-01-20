@@ -107,8 +107,8 @@ export const ContestsSection = () => {
                       <Users className="w-4 h-4" />
                       <span className="text-xs">{contest.participants} participantes</span>
                     </div>
-                    <Button variant="neon" size="sm" className="mt-2">
-                      Participar
+                    <Button asChild variant="neon" size="sm" className="mt-2">
+                      <a href="#contacto">Participar</a>
                     </Button>
                   </div>
                 </div>
@@ -146,8 +146,8 @@ export const ContestsSection = () => {
             </div>
             
             <div className="p-4 border-t border-border/50">
-              <Button variant="outline" size="sm" className="w-full">
-                Ver ranking completo <ArrowRight className="w-3 h-3 ml-2" />
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <a href="#concursos">Ver ranking completo <ArrowRight className="w-3 h-3 ml-2" /></a>
               </Button>
             </div>
           </div>

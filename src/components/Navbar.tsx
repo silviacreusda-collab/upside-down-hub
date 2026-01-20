@@ -42,8 +42,8 @@ export const Navbar = () => {
 
           {/* CTA Button */}
           <div className="hidden md:block">
-            <Button variant="neon" size="sm">
-              Únete
+            <Button asChild variant="neon" size="sm">
+              <a href="#comunidad">Únete</a>
             </Button>
           </div>
 
@@ -75,8 +75,8 @@ export const Navbar = () => {
                 );
               })}
               <div className="pt-4">
-                <Button variant="neon" className="w-full">
-                  Únete a la Comunidad
+                <Button asChild variant="neon" className="w-full">
+                  <a href="#comunidad">Únete a la Comunidad</a>
                 </Button>
               </div>
             </div>

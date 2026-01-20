@@ -56,8 +56,8 @@ export const NewsSection = () => {
               ÚLTIMAS <span className="text-neon-red">NOTICIAS</span>
             </h2>
           </div>
-          <Button variant="outline" className="self-start md:self-auto">
-            Ver todas <ArrowRight className="w-4 h-4 ml-2" />
+          <Button asChild variant="outline" className="self-start md:self-auto">
+            <a href="#noticias">Ver todas <ArrowRight className="w-4 h-4 ml-2" /></a>
           </Button>
         </div>
 

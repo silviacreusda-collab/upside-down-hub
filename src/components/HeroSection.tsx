@@ -1,14 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import heroBackground from "@/assets/hero-background.jpg";
+import bg1 from "@/assets/bg-rotator-1.jpg";
+import bg2 from "@/assets/bg-rotator-2.jpg";
+import { BackgroundRotator } from "./BackgroundRotator";
 
 export const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroBackground})` }}
+      {/* Background image rotator */}
+      <BackgroundRotator
+        images={[heroBackground, bg1, bg2]}
+        className="absolute inset-0"
       />
       
       {/* Gradient overlay */}
@@ -56,11 +59,11 @@ export const HeroSection = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-slide-up">
-            <Button variant="hero" size="xl">
-              Explorar Ahora
+            <Button asChild variant="hero" size="xl">
+              <a href="#noticias">Explorar Ahora</a>
             </Button>
-            <Button variant="neon-cyan" size="lg">
-              Unirse a la Comunidad
+            <Button asChild variant="neon-cyan" size="lg">
+              <a href="#comunidad">Unirse a la Comunidad</a>
             </Button>
           </div>
           
@@ -83,9 +86,12 @@ export const HeroSection = () => {
         
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-8 h-8 text-neon-red/70" />
+          <a href="#noticias" aria-label="Bajar a noticias">
+            <ChevronDown className="w-8 h-8 text-neon-red/70" />
+          </a>
         </div>
       </div>
     </section>
   );
 };
+

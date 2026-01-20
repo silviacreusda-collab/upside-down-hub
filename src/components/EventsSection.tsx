@@ -59,8 +59,8 @@ export const EventsSection = () => {
               EVENTOS Y <span className="text-neon-red">QUEDADAS</span>
             </h2>
           </div>
-          <Button variant="outline" className="self-start md:self-auto">
-            Ver calendario <ArrowRight className="w-4 h-4 ml-2" />
+          <Button asChild variant="outline" className="self-start md:self-auto">
+            <a href="#eventos">Ver calendario <ArrowRight className="w-4 h-4 ml-2" /></a>
           </Button>
         </div>
 
