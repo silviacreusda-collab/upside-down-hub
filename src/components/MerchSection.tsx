@@ -8,23 +8,23 @@ const products = [
     price: "24,99€",
     rating: 4.8,
     category: "Ropa",
-    affiliateUrl: "#",
+    affiliateUrl: "https://www.amazon.es/s?k=camiseta+hawkins+high+stranger+things",
   },
   {
     id: 2,
-    name: "Funko Pop Eleven",
+    name: "Figura coleccionable Eleven",
     price: "14,99€",
     rating: 4.9,
     category: "Colección",
-    affiliateUrl: "#",
+    affiliateUrl: "https://www.amazon.es/s?k=figura+eleven+stranger+things",
   },
   {
     id: 3,
-    name: "Poster Upside Down",
+    name: "Póster estilo Upside Down",
     price: "12,99€",
     rating: 4.7,
     category: "Decoración",
-    affiliateUrl: "#",
+    affiliateUrl: "https://www.amazon.es/s?k=poster+stranger+things+upside+down",
   },
   {
     id: 4,
@@ -32,7 +32,7 @@ const products = [
     price: "9,99€",
     rating: 4.6,
     category: "Hogar",
-    affiliateUrl: "#",
+    affiliateUrl: "https://www.amazon.es/s?k=taza+eggo+waffles+stranger+things",
   },
 ];
 
@@ -58,8 +58,8 @@ export const MerchSection = () => {
               Enlaces de afiliado a productos oficiales. Cada compra apoya la comunidad.
             </p>
           </div>
-          <Button variant="outline" className="self-start md:self-auto">
-            Ver todo <ArrowRight className="w-4 h-4 ml-2" />
+          <Button asChild variant="outline" className="self-start md:self-auto">
+            <a href="#merch">Ver todo <ArrowRight className="w-4 h-4 ml-2" /></a>
           </Button>
         </div>
 

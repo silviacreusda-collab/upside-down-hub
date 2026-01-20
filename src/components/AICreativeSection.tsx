@@ -84,9 +84,8 @@ export const AICreativeSection = () => {
             })}
             
             <div className="pt-4">
-              <Button variant="neon-magenta" size="lg">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Probar Ahora - ¡Gratis!
+              <Button asChild variant="neon-magenta" size="lg">
+                <a href="#ia"><Sparkles className="w-4 h-4 mr-2" />Probar Ahora - ¡Gratis!</a>
               </Button>
             </div>
           </div>

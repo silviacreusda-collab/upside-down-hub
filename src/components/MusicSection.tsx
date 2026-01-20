@@ -66,9 +66,8 @@ export const MusicSection = () => {
               </div>
             </div>
 
-            <Button variant="neon" size="lg">
-              <Music className="w-4 h-4 mr-2" />
-              Escuchar Ahora
+            <Button asChild variant="neon" size="lg">
+              <a href="#musica"><Music className="w-4 h-4 mr-2" />Escuchar Ahora</a>
             </Button>
           </div>
 
