@@ -1,15 +1,13 @@
-import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { Menu, X, Zap, Users, Newspaper, Calendar, ShoppingBag, Music, Trophy, Sparkles } from "lucide-react";
+import { Menu, X, Users, Newspaper, Calendar, ShoppingBag, Music, Trophy, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 
 const navItems = [
-  { label: "Inicio", href: "#", icon: Zap },
   { label: "Noticias", href: "#noticias", icon: Newspaper },
   { label: "Eventos", href: "#eventos", icon: Calendar },
   { label: "Merch", href: "#merch", icon: ShoppingBag },
   { label: "Comunidad", href: "#comunidad", icon: Users },
-  { label: "IA Creativa", href: "#ia", icon: Sparkles },
+  { label: "IA", href: "#ia", icon: Sparkles },
   { label: "Música", href: "#musica", icon: Music },
   { label: "Concursos", href: "#concursos", icon: Trophy },
 ];
