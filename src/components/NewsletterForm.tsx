@@ -43,15 +43,18 @@ export const NewsletterForm = () => {
     
     toast({
       title: "¡Suscripción exitosa!",
-      description: "Te has unido a la comunidad Stranger Fans.",
+      description: "Te has unido a la comunidad Stranger Fans. Recibirás las últimas noticias.",
     });
   };
 
   if (isSubscribed) {
     return (
-      <div className="flex items-center gap-2 p-4 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl">
-        <CheckCircle className="w-5 h-5 text-neon-cyan" />
-        <span className="text-sm text-neon-cyan">¡Gracias! Estás en la lista.</span>
+      <div className="flex items-center justify-center gap-3 p-4 bg-neon-cyan/10 border border-neon-cyan/30 rounded-xl">
+        <CheckCircle className="w-6 h-6 text-neon-cyan" />
+        <div className="text-left">
+          <p className="text-sm font-medium text-neon-cyan">¡Gracias por suscribirte!</p>
+          <p className="text-xs text-muted-foreground">Recibirás noticias exclusivas pronto.</p>
+        </div>
       </div>
     );
   }
@@ -81,7 +84,7 @@ export const NewsletterForm = () => {
             Uniendo...
           </>
         ) : (
-          "Unirse"
+          "Unirse ahora"
         )}
       </Button>
     </form>

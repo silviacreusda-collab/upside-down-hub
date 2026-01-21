@@ -1,21 +1,26 @@
+import { useState } from "react";
+import { Sparkles, Image, FileImage, Printer, Download, Share2, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Image, FileImage, Printer, Download, Share2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const aiFeatures = [
   {
     icon: Image,
     title: "Fotos con Personajes",
     description: "Hazte una foto virtual con Eleven, Dustin o cualquier personaje de la serie.",
+    action: "foto",
   },
   {
     icon: FileImage,
     title: "Generador de Posters",
     description: "Crea posters personalizados con tu nombre en el estilo icónico de Stranger Things.",
+    action: "poster",
   },
   {
     icon: Printer,
     title: "Tarjetas Imprimibles",
     description: "Diseña invitaciones, tarjetas de cumpleaños y más con temática de la serie.",
+    action: "tarjeta",
   },
 ];
 
@@ -26,6 +31,35 @@ const actions = [
 ];
 
 export const AICreativeSection = () => {
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const { toast } = useToast();
+
+  const handleFeatureClick = async (action: string) => {
+    setSelectedFeature(action);
+    setIsGenerating(true);
+    setGenerated(false);
+
+    // Simulate AI generation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    setIsGenerating(false);
+    setGenerated(true);
+    
+    toast({
+      title: "¡Creación generada!",
+      description: "Tu contenido de IA está listo. Puedes descargarlo o compartirlo.",
+    });
+  };
+
+  const handleAction = (action: string) => {
+    toast({
+      title: action === "Descargar" ? "Descargando..." : action === "Imprimir" ? "Preparando impresión..." : "Compartiendo...",
+      description: "Esta funcionalidad estará disponible próximamente con nuestra integración de IA completa.",
+    });
+  };
+
   return (
     <section id="ia" className="relative py-20 md:py-32">
       {/* Background */}
@@ -61,12 +95,14 @@ export const AICreativeSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Features List */}
           <div className="space-y-6">
-            {aiFeatures.map((feature, index) => {
+            {aiFeatures.map((feature) => {
               const Icon = feature.icon;
+              const isSelected = selectedFeature === feature.action;
               return (
                 <div
                   key={feature.title}
-                  className="group flex gap-4 p-4 rounded-xl hover:bg-card/50 transition-colors cursor-pointer"
+                  onClick={() => handleFeatureClick(feature.action)}
+                  className={`group flex gap-4 p-4 rounded-xl hover:bg-card/50 transition-colors cursor-pointer ${isSelected ? 'bg-card/50 border border-neon-magenta/30' : ''}`}
                 >
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-neon-magenta/20 to-neon-cyan/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                     <Icon className="w-6 h-6 text-neon-magenta" />
@@ -84,8 +120,23 @@ export const AICreativeSection = () => {
             })}
             
             <div className="pt-4">
-              <Button asChild variant="neon-magenta" size="lg">
-                <a href="#ia"><Sparkles className="w-4 h-4 mr-2" />Probar Ahora - ¡Gratis!</a>
+              <Button 
+                variant="neon-magenta" 
+                size="lg"
+                onClick={() => handleFeatureClick('poster')}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Probar Ahora - ¡Gratis!
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -95,19 +146,41 @@ export const AICreativeSection = () => {
             <div className="bg-card rounded-2xl border border-border/50 overflow-hidden shadow-[0_0_60px_hsl(var(--neon-magenta)/0.2)]">
               {/* Preview area */}
               <div className="aspect-[4/3] bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 flex items-center justify-center">
-                <div className="text-center">
-                  <Sparkles className="w-16 h-16 text-neon-magenta/50 mx-auto mb-4" />
-                  <p className="font-display text-sm text-muted-foreground tracking-wider">
-                    TU CREACIÓN AQUÍ
-                  </p>
-                </div>
+                {isGenerating ? (
+                  <div className="text-center">
+                    <Loader2 className="w-16 h-16 text-neon-magenta mx-auto mb-4 animate-spin" />
+                    <p className="font-display text-sm text-muted-foreground tracking-wider">
+                      GENERANDO CON IA...
+                    </p>
+                  </div>
+                ) : generated ? (
+                  <div className="text-center">
+                    <CheckCircle className="w-16 h-16 text-neon-cyan mx-auto mb-4" />
+                    <p className="font-display text-sm text-neon-cyan tracking-wider">
+                      ¡CREACIÓN LISTA!
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Tu {selectedFeature === 'foto' ? 'foto' : selectedFeature === 'poster' ? 'póster' : 'tarjeta'} de Stranger Things
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Sparkles className="w-16 h-16 text-neon-magenta/50 mx-auto mb-4" />
+                    <p className="font-display text-sm text-muted-foreground tracking-wider">
+                      TU CREACIÓN AQUÍ
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Selecciona una opción para empezar
+                    </p>
+                  </div>
+                )}
               </div>
               
               {/* Actions bar */}
               <div className="p-4 bg-card/80 backdrop-blur-sm border-t border-border/50">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Listo para compartir
+                    {generated ? "Listo para compartir" : "Esperando creación..."}
                   </span>
                   <div className="flex gap-2">
                     {actions.map((action) => {
@@ -115,7 +188,9 @@ export const AICreativeSection = () => {
                       return (
                         <button
                           key={action.label}
-                          className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-magenta/20 hover:text-neon-magenta transition-colors"
+                          onClick={() => handleAction(action.label)}
+                          disabled={!generated}
+                          className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-magenta/20 hover:text-neon-magenta transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title={action.label}
                         >
                           <Icon className="w-4 h-4" />

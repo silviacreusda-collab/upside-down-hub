@@ -1,5 +1,7 @@
-import { Calendar, MapPin, Clock, ArrowRight, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Calendar, MapPin, Clock, ArrowRight, ExternalLink, X } from "lucide-react";
 import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const events = [
   {
@@ -10,6 +12,8 @@ const events = [
     location: "IFEMA Madrid",
     type: "Experiencia",
     featured: true,
+    description: "Una experiencia inmersiva única donde podrás vivir en primera persona el mundo de Stranger Things. Recorre sets recreados, conoce personajes y participa en misiones exclusivas.",
+    ticketUrl: "https://www.ifema.es",
   },
   {
     id: 2,
@@ -19,6 +23,8 @@ const events = [
     location: "Online",
     type: "Watch Party",
     featured: false,
+    description: "Únete a nuestra watch party online. Comentaremos en directo todas las temporadas con otros fans.",
+    ticketUrl: "",
   },
   {
     id: 3,
@@ -28,6 +34,8 @@ const events = [
     location: "Parc de la Ciutadella",
     type: "Meetup",
     featured: false,
+    description: "Encuentra otros fans de Stranger Things en Barcelona. Trae tu mejor cosplay o ven casual.",
+    ticketUrl: "",
   },
   {
     id: 4,
@@ -37,10 +45,31 @@ const events = [
     location: "Valencia",
     type: "Concurso",
     featured: false,
+    description: "Concurso de cosplay con premios increíbles. ¡Demuestra tu creatividad!",
+    ticketUrl: "",
   },
 ];
 
 export const EventsSection = () => {
+  const [selectedEvent, setSelectedEvent] = useState<typeof events[0] | null>(null);
+  const { toast } = useToast();
+
+  const handleEventClick = (event: typeof events[0]) => {
+    setSelectedEvent(event);
+  };
+
+  const handleRegister = (event: typeof events[0]) => {
+    if (event.ticketUrl) {
+      window.open(event.ticketUrl, "_blank");
+    } else {
+      toast({
+        title: "¡Registrado!",
+        description: `Te has apuntado a "${event.title}". Te enviaremos más información por email.`,
+      });
+    }
+    setSelectedEvent(null);
+  };
+
   return (
     <section id="eventos" className="relative py-20 md:py-32">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
@@ -69,6 +98,7 @@ export const EventsSection = () => {
           {events.map((event) => (
             <div
               key={event.id}
+              onClick={() => handleEventClick(event)}
               className={`group relative bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden border border-border/50 card-neon-hover cursor-pointer ${
                 event.featured ? "md:col-span-2 md:row-span-2" : ""
               }`}
@@ -116,6 +146,50 @@ export const EventsSection = () => {
           ))}
         </div>
       </div>
+
+      {/* Event Modal */}
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedEvent(null)}>
+          <div className="bg-card rounded-2xl border border-border/50 max-w-lg w-full p-6 shadow-[0_0_60px_hsl(var(--neon-red)/0.3)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="px-2 py-1 bg-neon-magenta/20 text-neon-magenta text-xs font-display rounded">
+                {selectedEvent.type}
+              </span>
+              <button onClick={() => setSelectedEvent(null)} className="p-1 hover:bg-muted rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <h3 className="font-title text-2xl text-foreground mb-4">{selectedEvent.title}</h3>
+            
+            <div className="space-y-2 text-sm text-muted-foreground mb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-neon-cyan" />
+                {selectedEvent.date}
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-neon-yellow" />
+                {selectedEvent.time}
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-neon-magenta" />
+                {selectedEvent.location}
+              </div>
+            </div>
+            
+            <p className="text-muted-foreground mb-6">{selectedEvent.description}</p>
+            
+            <div className="flex gap-3">
+              <Button variant="neon" className="flex-1" onClick={() => handleRegister(selectedEvent)}>
+                {selectedEvent.ticketUrl ? "Comprar entradas" : "Apuntarme"}
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

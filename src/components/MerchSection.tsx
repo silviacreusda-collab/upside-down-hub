@@ -1,5 +1,6 @@
 import { ShoppingBag, Star, ExternalLink, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const products = [
   {
@@ -9,6 +10,7 @@ const products = [
     rating: 4.8,
     category: "Ropa",
     affiliateUrl: "https://www.amazon.es/s?k=camiseta+hawkins+high+stranger+things",
+    image: "👕",
   },
   {
     id: 2,
@@ -17,6 +19,7 @@ const products = [
     rating: 4.9,
     category: "Colección",
     affiliateUrl: "https://www.amazon.es/s?k=figura+eleven+stranger+things",
+    image: "🎭",
   },
   {
     id: 3,
@@ -25,6 +28,7 @@ const products = [
     rating: 4.7,
     category: "Decoración",
     affiliateUrl: "https://www.amazon.es/s?k=poster+stranger+things+upside+down",
+    image: "🖼️",
   },
   {
     id: 4,
@@ -33,10 +37,21 @@ const products = [
     rating: 4.6,
     category: "Hogar",
     affiliateUrl: "https://www.amazon.es/s?k=taza+eggo+waffles+stranger+things",
+    image: "☕",
   },
 ];
 
 export const MerchSection = () => {
+  const { toast } = useToast();
+
+  const handleProductClick = (product: typeof products[0]) => {
+    toast({
+      title: "Redirigiendo a Amazon...",
+      description: `Buscando "${product.name}" en Amazon España.`,
+    });
+    window.open(product.affiliateUrl, "_blank");
+  };
+
   return (
     <section id="merch" className="relative py-20 md:py-32">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background" />
@@ -59,23 +74,23 @@ export const MerchSection = () => {
             </p>
           </div>
           <Button asChild variant="outline" className="self-start md:self-auto">
-            <a href="#merch">Ver todo <ArrowRight className="w-4 h-4 ml-2" /></a>
+            <a href="https://www.amazon.es/s?k=stranger+things" target="_blank" rel="noopener noreferrer">
+              Ver todo en Amazon <ArrowRight className="w-4 h-4 ml-2" />
+            </a>
           </Button>
         </div>
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {products.map((product) => (
-            <a
+            <div
               key={product.id}
-              href={product.affiliateUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden border border-border/50 card-neon-hover"
+              onClick={() => handleProductClick(product)}
+              className="group relative bg-card/50 backdrop-blur-sm rounded-xl overflow-hidden border border-border/50 card-neon-hover cursor-pointer"
             >
               {/* Product image placeholder */}
               <div className="aspect-square bg-gradient-to-br from-neon-cyan/20 via-neon-magenta/10 to-neon-yellow/20 flex items-center justify-center">
-                <ShoppingBag className="w-12 h-12 text-neon-cyan/30 group-hover:text-neon-cyan/60 transition-colors" />
+                <span className="text-6xl group-hover:scale-110 transition-transform">{product.image}</span>
               </div>
               
               <div className="p-4">
@@ -101,13 +116,13 @@ export const MerchSection = () => {
               
               {/* External link indicator */}
               <ExternalLink className="absolute top-3 right-3 w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </a>
+            </div>
           ))}
         </div>
 
         {/* Affiliate disclaimer */}
         <p className="text-center text-xs text-muted-foreground mt-8">
-          * Enlaces de afiliado. Podemos recibir una comisión por las compras realizadas.
+          * Enlaces de afiliado a Amazon. Podemos recibir una comisión por las compras realizadas.
         </p>
       </div>
     </section>
