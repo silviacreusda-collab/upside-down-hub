@@ -1,33 +1,38 @@
-import { Trophy, Medal, Crown, Star, Users, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Trophy, Medal, Crown, Star, Users, ArrowRight, X, CheckCircle } from "lucide-react";
 import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const contests = [
   {
     id: 1,
     title: "Concurso de Cosplay",
-    description: "Recrea tu personaje favorito y gana premios increíbles.",
+    description: "Recrea tu personaje favorito y gana premios increíbles. Sube una foto de tu cosplay y participa.",
     prize: "500€ en premios",
     participants: 234,
     deadline: "15 Feb 2025",
     active: true,
+    rules: "1. Sube una foto de tu cosplay\n2. Debe ser un personaje de Stranger Things\n3. Puedes participar con múltiples fotos\n4. Los ganadores se anunciarán el 20 Feb 2025",
   },
   {
     id: 2,
     title: "Fan Art del Mes",
-    description: "Comparte tu arte de Stranger Things y participa.",
+    description: "Comparte tu arte de Stranger Things y participa. Cualquier técnica es válida.",
     prize: "Merch oficial",
     participants: 156,
     deadline: "28 Feb 2025",
     active: true,
+    rules: "1. Sube tu fan art original\n2. Cualquier técnica es válida\n3. El arte debe ser original tuyo\n4. Votación comunitaria decide al ganador",
   },
   {
     id: 3,
     title: "Mejor Teoría T5",
-    description: "¿Qué crees que pasará en la temporada final?",
+    description: "¿Qué crees que pasará en la temporada final? Comparte tu teoría.",
     prize: "Entrada evento",
     participants: 89,
     deadline: "10 Mar 2025",
     active: true,
+    rules: "1. Escribe tu teoría sobre la T5\n2. Mínimo 100 palabras\n3. Evita spoilers confirmados\n4. Las teorías más creativas ganan",
   },
 ];
 
@@ -40,6 +45,19 @@ const topUsers = [
 ];
 
 export const ContestsSection = () => {
+  const [selectedContest, setSelectedContest] = useState<typeof contests[0] | null>(null);
+  const [participatedContests, setParticipatedContests] = useState<number[]>([]);
+  const { toast } = useToast();
+
+  const handleParticipate = (contest: typeof contests[0]) => {
+    setParticipatedContests((prev) => [...prev, contest.id]);
+    setSelectedContest(null);
+    toast({
+      title: "¡Participación registrada!",
+      description: `Te has inscrito en "${contest.title}". ¡Mucha suerte!`,
+    });
+  };
+
   return (
     <section id="concursos" className="relative py-20 md:py-32 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-accent/5 to-background" />
@@ -89,6 +107,11 @@ export const ContestsSection = () => {
                       <span className="text-xs text-muted-foreground">
                         Termina: {contest.deadline}
                       </span>
+                      {participatedContests.includes(contest.id) && (
+                        <span className="flex items-center gap-1 text-xs text-neon-cyan">
+                          <CheckCircle className="w-3 h-3" /> Inscrito
+                        </span>
+                      )}
                     </div>
                     <h4 className="font-title text-xl text-foreground group-hover:text-neon-yellow transition-colors">
                       {contest.title}
@@ -107,9 +130,15 @@ export const ContestsSection = () => {
                       <Users className="w-4 h-4" />
                       <span className="text-xs">{contest.participants} participantes</span>
                     </div>
-                    <Button asChild variant="neon" size="sm" className="mt-2">
-                      <a href="#contacto">Participar</a>
-                    </Button>
+                    {participatedContests.includes(contest.id) ? (
+                      <Button variant="outline" size="sm" className="mt-2" disabled>
+                        Ya participas
+                      </Button>
+                    ) : (
+                      <Button variant="neon" size="sm" className="mt-2" onClick={() => setSelectedContest(contest)}>
+                        Participar
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -130,7 +159,7 @@ export const ContestsSection = () => {
               {topUsers.map((user, index) => (
                 <div
                   key={user.name}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <span className="w-6 text-center font-display text-lg text-muted-foreground">
                     {user.badge || (index + 1)}
@@ -146,13 +175,57 @@ export const ContestsSection = () => {
             </div>
             
             <div className="p-4 border-t border-border/50">
-              <Button asChild variant="outline" size="sm" className="w-full">
-                <a href="#concursos">Ver ranking completo <ArrowRight className="w-3 h-3 ml-2" /></a>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => toast({ title: "Ranking completo", description: "El ranking completo estará disponible próximamente." })}>
+                Ver ranking completo <ArrowRight className="w-3 h-3 ml-2" />
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Contest Modal */}
+      {selectedContest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedContest(null)}>
+          <div className="bg-card rounded-2xl border border-border/50 max-w-lg w-full p-6 shadow-[0_0_60px_hsl(var(--neon-yellow)/0.3)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="px-2 py-1 bg-neon-yellow/20 text-neon-yellow text-xs font-display rounded">
+                ACTIVO
+              </span>
+              <button onClick={() => setSelectedContest(null)} className="p-1 hover:bg-muted rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <h3 className="font-title text-2xl text-foreground mb-2">{selectedContest.title}</h3>
+            <p className="text-muted-foreground mb-4">{selectedContest.description}</p>
+            
+            <div className="bg-muted/30 rounded-lg p-4 mb-4">
+              <h4 className="font-display text-sm text-neon-yellow mb-2">REGLAS:</h4>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">{selectedContest.rules}</p>
+            </div>
+            
+            <div className="flex items-center justify-between mb-6 text-sm">
+              <div className="flex items-center gap-2 text-neon-magenta">
+                <Medal className="w-4 h-4" />
+                <span>{selectedContest.prize}</span>
+              </div>
+              <div className="text-muted-foreground">
+                Termina: {selectedContest.deadline}
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button variant="neon" className="flex-1" onClick={() => handleParticipate(selectedContest)}>
+                <Trophy className="w-4 h-4 mr-2" />
+                Participar ahora
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedContest(null)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

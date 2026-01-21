@@ -1,21 +1,45 @@
+import { useState } from "react";
+import { Music, Mic, Play, Trophy, Volume2, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Music, Mic, Play, Trophy, Volume2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const topSongs = [
-  { title: "Running Up That Hill", artist: "Kate Bush", plays: "2.3K" },
-  { title: "Should I Stay or Should I Go", artist: "The Clash", plays: "1.8K" },
-  { title: "Every Breath You Take", artist: "The Police", plays: "1.5K" },
-  { title: "Separate Ways", artist: "Journey", plays: "1.2K" },
+  { title: "Running Up That Hill", artist: "Kate Bush", plays: "2.3K", preview: true },
+  { title: "Should I Stay or Should I Go", artist: "The Clash", plays: "1.8K", preview: true },
+  { title: "Every Breath You Take", artist: "The Police", plays: "1.5K", preview: true },
+  { title: "Separate Ways", artist: "Journey", plays: "1.2K", preview: true },
 ];
 
 export const MusicSection = () => {
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  const handlePlaySong = (index: number) => {
+    if (playingIndex === index) {
+      setPlayingIndex(null);
+    } else {
+      setPlayingIndex(index);
+      toast({
+        title: `Reproduciendo: ${topSongs[index].title}`,
+        description: `${topSongs[index].artist} - Usa el reproductor de abajo para controlar la música.`,
+      });
+    }
+  };
+
+  const handleFeatureClick = (feature: string) => {
+    toast({
+      title: feature,
+      description: "Esta funcionalidad estará disponible próximamente. ¡Mantente atento!",
+    });
+  };
+
   return (
     <section id="musica" className="relative py-20 md:py-32 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-background to-hawkins-night" />
       
       {/* Vinyl record decoration */}
-      <div className="absolute -right-32 top-1/2 -translate-y-1/2 w-64 h-64 md:w-96 md:h-96 rounded-full border-4 border-neon-red/20 opacity-20">
+      <div className="absolute -right-32 top-1/2 -translate-y-1/2 w-64 h-64 md:w-96 md:h-96 rounded-full border-4 border-neon-red/20 opacity-20 animate-spin" style={{ animationDuration: '20s' }}>
         <div className="absolute inset-8 rounded-full border-2 border-neon-red/30" />
         <div className="absolute inset-16 rounded-full border border-neon-red/40" />
         <div className="absolute inset-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-neon-red/50" />
@@ -44,30 +68,50 @@ export const MusicSection = () => {
 
             {/* Features */}
             <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div 
+                onClick={() => handleFeatureClick("Música Ambiente")}
+                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-yellow/30 transition-colors"
+              >
                 <Volume2 className="w-8 h-8 text-neon-yellow mb-3" />
                 <h4 className="font-title text-lg text-foreground">Música Ambiente</h4>
                 <p className="text-xs text-muted-foreground">Soundtrack completo</p>
               </div>
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div 
+                onClick={() => handleFeatureClick("Karaoke")}
+                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-cyan/30 transition-colors"
+              >
                 <Mic className="w-8 h-8 text-neon-cyan mb-3" />
                 <h4 className="font-title text-lg text-foreground">Karaoke</h4>
                 <p className="text-xs text-muted-foreground">Graba y comparte</p>
               </div>
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div 
+                onClick={() => handleFeatureClick("Concursos")}
+                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-magenta/30 transition-colors"
+              >
                 <Trophy className="w-8 h-8 text-neon-magenta mb-3" />
                 <h4 className="font-title text-lg text-foreground">Concursos</h4>
                 <p className="text-xs text-muted-foreground">Rankings semanales</p>
               </div>
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+              <div 
+                onClick={() => handleFeatureClick("En Vivo")}
+                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-red/30 transition-colors"
+              >
                 <Play className="w-8 h-8 text-neon-red mb-3" />
                 <h4 className="font-title text-lg text-foreground">En Vivo</h4>
                 <p className="text-xs text-muted-foreground">24/7 streaming</p>
               </div>
             </div>
 
-            <Button asChild variant="neon" size="lg">
-              <a href="#musica"><Music className="w-4 h-4 mr-2" />Escuchar Ahora</a>
+            <Button variant="neon" size="lg" onClick={() => {
+              const player = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
+              player?.click();
+              toast({
+                title: "¡Música activada!",
+                description: "Usa el reproductor en la parte inferior para controlar la música.",
+              });
+            }}>
+              <Music className="w-4 h-4 mr-2" />
+              Escuchar Ahora
             </Button>
           </div>
 
@@ -91,16 +135,21 @@ export const MusicSection = () => {
               {topSongs.map((song, index) => (
                 <div
                   key={song.title}
+                  onClick={() => handlePlaySong(index)}
                   className="group flex items-center gap-4 p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <span className="font-display text-lg text-muted-foreground w-6">
                     {index + 1}
                   </span>
-                  <div className="w-10 h-10 rounded bg-muted/50 flex items-center justify-center group-hover:bg-neon-red/30 transition-colors">
-                    <Play className="w-4 h-4 text-muted-foreground group-hover:text-neon-red" />
+                  <div className={`w-10 h-10 rounded flex items-center justify-center transition-colors ${playingIndex === index ? 'bg-neon-red/50' : 'bg-muted/50 group-hover:bg-neon-red/30'}`}>
+                    {playingIndex === index ? (
+                      <Pause className="w-4 h-4 text-neon-red" />
+                    ) : (
+                      <Play className="w-4 h-4 text-muted-foreground group-hover:text-neon-red" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate group-hover:text-neon-red transition-colors">
+                    <p className={`font-medium truncate transition-colors ${playingIndex === index ? 'text-neon-red' : 'text-foreground group-hover:text-neon-red'}`}>
                       {song.title}
                     </p>
                     <p className="text-sm text-muted-foreground">{song.artist}</p>

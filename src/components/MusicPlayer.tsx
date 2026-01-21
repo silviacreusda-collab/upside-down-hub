@@ -1,23 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const playlist = [
   {
     title: "80s Retro Synthwave",
-    artist: "Royalty-free",
-    duration: "—",
+    artist: "Ambiente 80s",
     src: "https://cdn.pixabay.com/audio/2024/01/18/audio_277332f183.mp3",
   },
   {
     title: "Dark Ambient",
-    artist: "Royalty-free",
-    duration: "—",
+    artist: "Upside Down",
     src: "https://cdn.pixabay.com/audio/2022/05/04/audio_3d1f0a0342.mp3",
   },
   {
     title: "Synth Pulse",
-    artist: "Royalty-free",
-    duration: "—",
+    artist: "Hawkins Lab",
     src: "https://cdn.pixabay.com/audio/2022/03/23/audio_097fdc7624.mp3",
   },
 ];
@@ -27,51 +25,115 @@ export const MusicPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const { toast } = useToast();
 
-  const current = useMemo(() => playlist[currentTrack], [currentTrack]);
+  const current = playlist[currentTrack];
 
+  // Initialize audio element
   useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.muted = isMuted;
-  }, [isMuted]);
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.loop = false;
+    audioRef.current = audio;
 
+    // Handle track end
+    const handleEnded = () => {
+      setCurrentTrack((prev) => (prev + 1) % playlist.length);
+    };
+
+    // Handle time update for progress
+    const handleTimeUpdate = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    };
+
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
+
+  // Load new track when currentTrack changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     audio.src = current.src;
     audio.load();
+    setProgress(0);
 
     if (isPlaying) {
-      // Attempt autoplay when user already interacted
-      void audio.play().catch(() => {
+      audio.play().catch(() => {
         setIsPlaying(false);
       });
     }
-  }, [current.src]);
+  }, [currentTrack, current.src]);
 
+  // Handle play/pause
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (isPlaying) {
-      void audio.play().catch(() => {
+      audio.play().catch(() => {
         setIsPlaying(false);
+        toast({
+          title: "Interacción requerida",
+          description: "Haz clic en Play para iniciar la música.",
+        });
       });
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, toast]);
 
-  const togglePlay = () => setIsPlaying((p) => !p);
-  const toggleMute = () => setIsMuted((m) => !m);
-  const nextTrack = () => setCurrentTrack((prev) => (prev + 1) % playlist.length);
-  const prevTrack = () => setCurrentTrack((prev) => (prev - 1 + playlist.length) % playlist.length);
+  // Handle mute
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const togglePlay = useCallback(() => {
+    setIsPlaying((p) => !p);
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((m) => !m);
+  }, []);
+
+  const nextTrack = useCallback(() => {
+    setCurrentTrack((prev) => (prev + 1) % playlist.length);
+    toast({
+      title: "Siguiente pista",
+      description: playlist[(currentTrack + 1) % playlist.length].title,
+    });
+  }, [currentTrack, toast]);
+
+  const prevTrack = useCallback(() => {
+    setCurrentTrack((prev) => (prev - 1 + playlist.length) % playlist.length);
+    toast({
+      title: "Pista anterior",
+      description: playlist[(currentTrack - 1 + playlist.length) % playlist.length].title,
+    });
+  }, [currentTrack, toast]);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-primary/30">
-      {/* Hidden audio element */}
-      <audio ref={audioRef} preload="none" loop crossOrigin="anonymous" />
+      {/* Progress bar */}
+      <div className="h-1 bg-muted/50">
+        <div
+          className="h-full bg-gradient-to-r from-neon-red to-neon-magenta transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
@@ -117,6 +179,9 @@ export const MusicPlayer = () => {
 
           {/* Volume */}
           <div className="flex items-center gap-3 flex-1 justify-end">
+            <span className="hidden md:block text-xs text-muted-foreground font-display">
+              {currentTrack + 1}/{playlist.length}
+            </span>
             <button
               onClick={toggleMute}
               className="p-2 rounded-full hover:bg-muted/50 transition-colors"
@@ -128,13 +193,9 @@ export const MusicPlayer = () => {
                 <Volume2 className="w-4 h-4 md:w-5 md:h-5 text-neon-cyan" />
               )}
             </button>
-            <div className="hidden md:block w-32 h-1 bg-muted rounded-full overflow-hidden">
-              <div className={`h-full bg-neon-red rounded-full transition-all ${isPlaying ? "w-1/3 animate-pulse" : "w-0"}`} />
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
-
