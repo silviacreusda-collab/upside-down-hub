@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const topSongs = [
-  { title: "Running Up That Hill", artist: "Kate Bush", plays: "2.3K", preview: true },
-  { title: "Should I Stay or Should I Go", artist: "The Clash", plays: "1.8K", preview: true },
-  { title: "Every Breath You Take", artist: "The Police", plays: "1.5K", preview: true },
-  { title: "Separate Ways", artist: "Journey", plays: "1.2K", preview: true },
+  { title: "Running Up That Hill", artist: "Kate Bush", plays: "2.3K" },
+  { title: "Should I Stay or Should I Go", artist: "The Clash", plays: "1.8K" },
+  { title: "Every Breath You Take", artist: "The Police", plays: "1.5K" },
+  { title: "Separate Ways", artist: "Journey", plays: "1.2K" },
 ];
 
 export const MusicSection = () => {
@@ -17,20 +17,41 @@ export const MusicSection = () => {
   const handlePlaySong = (index: number) => {
     if (playingIndex === index) {
       setPlayingIndex(null);
+      toast({
+        title: "Pausado",
+        description: `${topSongs[index].title} pausado.`,
+      });
     } else {
       setPlayingIndex(index);
       toast({
-        title: `Reproduciendo: ${topSongs[index].title}`,
-        description: `${topSongs[index].artist} - Usa el reproductor de abajo para controlar la música.`,
+        title: `▶ ${topSongs[index].title}`,
+        description: `${topSongs[index].artist} - Reproduciendo en el player inferior.`,
       });
     }
   };
 
   const handleFeatureClick = (feature: string) => {
     toast({
-      title: feature,
-      description: "Esta funcionalidad estará disponible próximamente. ¡Mantente atento!",
+      title: `${feature} activado`,
+      description: "Usa el reproductor en la parte inferior de la página.",
     });
+  };
+
+  const handlePlayNow = () => {
+    // Find the play button and click it
+    const playButton = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
+    if (playButton) {
+      playButton.click();
+      toast({
+        title: "¡Música activada!",
+        description: "Controla la reproducción desde el player inferior.",
+      });
+    } else {
+      toast({
+        title: "Reproductor listo",
+        description: "Haz clic en Play en el reproductor inferior.",
+      });
+    }
   };
 
   return (
@@ -102,14 +123,7 @@ export const MusicSection = () => {
               </div>
             </div>
 
-            <Button variant="neon" size="lg" onClick={() => {
-              const player = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
-              player?.click();
-              toast({
-                title: "¡Música activada!",
-                description: "Usa el reproductor en la parte inferior para controlar la música.",
-              });
-            }}>
+            <Button variant="neon" size="lg" onClick={handlePlayNow}>
               <Music className="w-4 h-4 mr-2" />
               Escuchar Ahora
             </Button>

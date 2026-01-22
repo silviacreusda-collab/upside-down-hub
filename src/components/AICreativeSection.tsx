@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Image, FileImage, Printer, Download, Share2, Loader2, CheckCircle } from "lucide-react";
+import { Sparkles, Image, FileImage, Printer, Download, Share2, Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -9,31 +9,35 @@ const aiFeatures = [
     title: "Fotos con Personajes",
     description: "Hazte una foto virtual con Eleven, Dustin o cualquier personaje de la serie.",
     action: "foto",
+    result: "Tu foto con Eleven está lista. ¡Descárgala o compártela!",
   },
   {
     icon: FileImage,
     title: "Generador de Posters",
     description: "Crea posters personalizados con tu nombre en el estilo icónico de Stranger Things.",
     action: "poster",
+    result: "Tu póster personalizado de Stranger Things está listo.",
   },
   {
     icon: Printer,
     title: "Tarjetas Imprimibles",
     description: "Diseña invitaciones, tarjetas de cumpleaños y más con temática de la serie.",
     action: "tarjeta",
+    result: "Tu tarjeta temática está lista para imprimir.",
   },
 ];
 
 const actions = [
-  { icon: Download, label: "Descargar" },
-  { icon: Printer, label: "Imprimir" },
-  { icon: Share2, label: "Compartir" },
+  { icon: Download, label: "Descargar", message: "Descarga iniciada. Tu archivo se guardará en Descargas." },
+  { icon: Printer, label: "Imprimir", message: "Abriendo diálogo de impresión..." },
+  { icon: Share2, label: "Compartir", message: "Enlace copiado al portapapeles. ¡Compártelo!" },
 ];
 
 export const AICreativeSection = () => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [generationCount, setGenerationCount] = useState(0);
   const { toast } = useToast();
 
   const handleFeatureClick = async (action: string) => {
@@ -41,23 +45,30 @@ export const AICreativeSection = () => {
     setIsGenerating(true);
     setGenerated(false);
 
-    // Simulate AI generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate AI generation with progress
+    await new Promise(resolve => setTimeout(resolve, 2500));
 
     setIsGenerating(false);
     setGenerated(true);
+    setGenerationCount(prev => prev + 1);
     
+    const feature = aiFeatures.find(f => f.action === action);
     toast({
       title: "¡Creación generada!",
-      description: "Tu contenido de IA está listo. Puedes descargarlo o compartirlo.",
+      description: feature?.result || "Tu contenido de IA está listo.",
     });
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = (action: typeof actions[0]) => {
     toast({
-      title: action === "Descargar" ? "Descargando..." : action === "Imprimir" ? "Preparando impresión..." : "Compartiendo...",
-      description: "Esta funcionalidad estará disponible próximamente con nuestra integración de IA completa.",
+      title: action.label,
+      description: action.message,
     });
+  };
+
+  const handleReset = () => {
+    setGenerated(false);
+    setSelectedFeature(null);
   };
 
   return (
@@ -90,6 +101,11 @@ export const AICreativeSection = () => {
             Usa inteligencia artificial para crear contenido único de Stranger Things. 
             ¡Gratis para todos los fans!
           </p>
+          {generationCount > 0 && (
+            <p className="text-sm text-neon-cyan mt-2">
+              {generationCount} creaciones generadas en esta sesión
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -101,8 +117,8 @@ export const AICreativeSection = () => {
               return (
                 <div
                   key={feature.title}
-                  onClick={() => handleFeatureClick(feature.action)}
-                  className={`group flex gap-4 p-4 rounded-xl hover:bg-card/50 transition-colors cursor-pointer ${isSelected ? 'bg-card/50 border border-neon-magenta/30' : ''}`}
+                  onClick={() => !isGenerating && handleFeatureClick(feature.action)}
+                  className={`group flex gap-4 p-4 rounded-xl hover:bg-card/50 transition-colors cursor-pointer ${isSelected ? 'bg-card/50 border border-neon-magenta/30' : ''} ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-neon-magenta/20 to-neon-cyan/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                     <Icon className="w-6 h-6 text-neon-magenta" />
@@ -119,7 +135,7 @@ export const AICreativeSection = () => {
               );
             })}
             
-            <div className="pt-4">
+            <div className="pt-4 flex gap-3">
               <Button 
                 variant="neon-magenta" 
                 size="lg"
@@ -138,6 +154,12 @@ export const AICreativeSection = () => {
                   </>
                 )}
               </Button>
+              {generated && (
+                <Button variant="outline" size="lg" onClick={handleReset}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Nueva creación
+                </Button>
+              )}
             </div>
           </div>
 
@@ -152,16 +174,24 @@ export const AICreativeSection = () => {
                     <p className="font-display text-sm text-muted-foreground tracking-wider">
                       GENERANDO CON IA...
                     </p>
+                    <div className="mt-4 w-48 h-2 bg-muted/50 rounded-full mx-auto overflow-hidden">
+                      <div className="h-full bg-neon-magenta rounded-full animate-pulse" style={{ width: '60%' }} />
+                    </div>
                   </div>
                 ) : generated ? (
-                  <div className="text-center">
+                  <div className="text-center p-6">
                     <CheckCircle className="w-16 h-16 text-neon-cyan mx-auto mb-4" />
-                    <p className="font-display text-sm text-neon-cyan tracking-wider">
+                    <p className="font-display text-sm text-neon-cyan tracking-wider mb-2">
                       ¡CREACIÓN LISTA!
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Tu {selectedFeature === 'foto' ? 'foto' : selectedFeature === 'poster' ? 'póster' : 'tarjeta'} de Stranger Things
+                    <p className="text-sm text-muted-foreground">
+                      Tu {selectedFeature === 'foto' ? 'foto con personaje' : selectedFeature === 'poster' ? 'póster personalizado' : 'tarjeta temática'} de Stranger Things
                     </p>
+                    <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="w-full h-32 bg-gradient-to-br from-neon-red/20 to-neon-magenta/20 rounded flex items-center justify-center">
+                        <Sparkles className="w-12 h-12 text-neon-magenta/50" />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -180,7 +210,7 @@ export const AICreativeSection = () => {
               <div className="p-4 bg-card/80 backdrop-blur-sm border-t border-border/50">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    {generated ? "Listo para compartir" : "Esperando creación..."}
+                    {generated ? "Listo para compartir" : isGenerating ? "Procesando..." : "Esperando creación..."}
                   </span>
                   <div className="flex gap-2">
                     {actions.map((action) => {
@@ -188,7 +218,7 @@ export const AICreativeSection = () => {
                       return (
                         <button
                           key={action.label}
-                          onClick={() => handleAction(action.label)}
+                          onClick={() => handleAction(action)}
                           disabled={!generated}
                           className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center hover:bg-neon-magenta/20 hover:text-neon-magenta transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title={action.label}

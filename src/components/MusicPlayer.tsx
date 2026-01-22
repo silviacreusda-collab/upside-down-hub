@@ -35,6 +35,7 @@ export const MusicPlayer = () => {
     const audio = new Audio();
     audio.preload = "auto";
     audio.loop = false;
+    audio.crossOrigin = "anonymous";
     audioRef.current = audio;
 
     // Handle track end
@@ -49,12 +50,20 @@ export const MusicPlayer = () => {
       }
     };
 
+    // Handle errors
+    const handleError = () => {
+      console.error("Audio error, trying next track");
+      setCurrentTrack((prev) => (prev + 1) % playlist.length);
+    };
+
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("error", handleError);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("error", handleError);
       audio.pause();
       audio.src = "";
     };
@@ -70,9 +79,12 @@ export const MusicPlayer = () => {
     setProgress(0);
 
     if (isPlaying) {
-      audio.play().catch(() => {
-        setIsPlaying(false);
-      });
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          setIsPlaying(false);
+        });
+      }
     }
   }, [currentTrack, current.src]);
 
@@ -82,13 +94,16 @@ export const MusicPlayer = () => {
     if (!audio) return;
 
     if (isPlaying) {
-      audio.play().catch(() => {
-        setIsPlaying(false);
-        toast({
-          title: "Interacción requerida",
-          description: "Haz clic en Play para iniciar la música.",
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          setIsPlaying(false);
+          toast({
+            title: "Haz clic en Play",
+            description: "El navegador requiere interacción para reproducir audio.",
+          });
         });
-      });
+      }
     } else {
       audio.pause();
     }
