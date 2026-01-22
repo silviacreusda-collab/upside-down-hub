@@ -6,17 +6,17 @@ const playlist = [
   {
     title: "80s Retro Synthwave",
     artist: "Ambiente 80s",
-    src: "https://cdn.pixabay.com/audio/2024/01/18/audio_277332f183.mp3",
+    src: "/audio/track-1.mp3",
   },
   {
     title: "Dark Ambient",
     artist: "Upside Down",
-    src: "https://cdn.pixabay.com/audio/2022/05/04/audio_3d1f0a0342.mp3",
+    src: "/audio/track-2.mp3",
   },
   {
     title: "Synth Pulse",
     artist: "Hawkins Lab",
-    src: "https://cdn.pixabay.com/audio/2022/03/23/audio_097fdc7624.mp3",
+    src: "/audio/track-3.mp3",
   },
 ];
 
@@ -26,6 +26,7 @@ export const MusicPlayer = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [errorStreak, setErrorStreak] = useState(0);
   const { toast } = useToast();
 
   const current = playlist[currentTrack];
@@ -52,18 +53,34 @@ export const MusicPlayer = () => {
 
     // Handle errors
     const handleError = () => {
+      // If a track fails to load/play, try the next one. If all fail, stop.
       console.error("Audio error, trying next track");
-      setCurrentTrack((prev) => (prev + 1) % playlist.length);
+      setErrorStreak((prev) => {
+        const next = prev + 1;
+        if (next >= playlist.length) {
+          setIsPlaying(false);
+        } else {
+          setCurrentTrack((t) => (t + 1) % playlist.length);
+        }
+        return next;
+      });
+    };
+
+    const handleCanPlay = () => {
+      // Reset error streak when a track can be played
+      setErrorStreak(0);
     };
 
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("error", handleError);
+    audio.addEventListener("canplay", handleCanPlay);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("error", handleError);
+      audio.removeEventListener("canplay", handleCanPlay);
       audio.pause();
       audio.src = "";
     };
