@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      community_members: {
+        Row: {
+          email: string
+          id: string
+          joined_at: string
+          name: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          joined_at?: string
+          name?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          joined_at?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      contest_participants: {
+        Row: {
+          contest_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          submission_text: string | null
+          submission_url: string | null
+        }
+        Insert: {
+          contest_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          submission_text?: string | null
+          submission_url?: string | null
+        }
+        Update: {
+          contest_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          submission_text?: string | null
+          submission_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

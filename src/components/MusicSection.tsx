@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Music, Mic, Play, Trophy, Volume2, Pause } from "lucide-react";
+import { Music, Mic, Play, Trophy, Volume2, Pause, Radio, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,9 +12,12 @@ const topSongs = [
 
 export const MusicSection = () => {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handlePlaySong = (index: number) => {
+    // This simulates playing songs from the playlist
+    // The actual music plays from the MusicPlayer component at the bottom
     if (playingIndex === index) {
       setPlayingIndex(null);
       toast({
@@ -25,25 +28,68 @@ export const MusicSection = () => {
       setPlayingIndex(index);
       toast({
         title: `▶ ${topSongs[index].title}`,
-        description: `${topSongs[index].artist} - Reproduciendo en el player inferior.`,
+        description: `${topSongs[index].artist} - ¡Escúchalo en el reproductor inferior!`,
       });
+      
+      // Trigger the main player
+      const playButton = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
+      if (playButton) {
+        playButton.click();
+      }
     }
   };
 
   const handleFeatureClick = (feature: string) => {
-    toast({
-      title: `${feature} activado`,
-      description: "Usa el reproductor en la parte inferior de la página.",
-    });
+    setActiveFeature(feature);
+    
+    switch (feature) {
+      case "Música Ambiente":
+        toast({
+          title: "🎵 Música Ambiente Activada",
+          description: "Usa el reproductor en la parte inferior para controlar la música.",
+        });
+        // Trigger play
+        const playBtn = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
+        if (playBtn) playBtn.click();
+        break;
+        
+      case "Karaoke":
+        toast({
+          title: "🎤 Modo Karaoke",
+          description: "El karaoke con letras sincronizadas estará disponible próximamente. ¡Mantente atento!",
+        });
+        break;
+        
+      case "Concursos":
+        toast({
+          title: "🏆 Concursos Musicales",
+          description: "Participa en los concursos de la sección de arriba. ¡Hay premios increíbles!",
+        });
+        // Scroll to contests section
+        document.getElementById("concursos")?.scrollIntoView({ behavior: "smooth" });
+        break;
+        
+      case "En Vivo":
+        toast({
+          title: "📻 Radio en Vivo 24/7",
+          description: "La radio en directo estará disponible próximamente. Por ahora, disfruta de las pistas locales.",
+        });
+        break;
+        
+      default:
+        toast({
+          title: `${feature} activado`,
+          description: "Usa el reproductor en la parte inferior de la página.",
+        });
+    }
   };
 
   const handlePlayNow = () => {
-    // Find the play button and click it
     const playButton = document.querySelector('[aria-label="Reproducir"]') as HTMLButtonElement;
     if (playButton) {
       playButton.click();
       toast({
-        title: "¡Música activada!",
+        title: "🎵 ¡Música activada!",
         description: "Controla la reproducción desde el player inferior.",
       });
     } else {
@@ -82,8 +128,8 @@ export const MusicSection = () => {
                 VIAJA A LOS <span className="text-neon-yellow">80s</span>
               </h2>
               <p className="text-muted-foreground">
-                Escucha la banda sonora de la serie, canta en nuestro karaoke 
-                y participa en concursos musicales. ¡Graba tu actuación!
+                Escucha la banda sonora de la serie con nuestro reproductor integrado. 
+                ¡Dale al Play en la barra inferior!
               </p>
             </div>
 
@@ -91,41 +137,41 @@ export const MusicSection = () => {
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div 
                 onClick={() => handleFeatureClick("Música Ambiente")}
-                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-yellow/30 transition-colors"
+                className={`bg-card/50 backdrop-blur-sm rounded-xl p-4 border cursor-pointer transition-all ${activeFeature === "Música Ambiente" ? "border-neon-yellow/50 bg-neon-yellow/10" : "border-border/50 hover:border-neon-yellow/30"}`}
               >
-                <Volume2 className="w-8 h-8 text-neon-yellow mb-3" />
+                <Headphones className="w-8 h-8 text-neon-yellow mb-3" />
                 <h4 className="font-title text-lg text-foreground">Música Ambiente</h4>
-                <p className="text-xs text-muted-foreground">Soundtrack completo</p>
+                <p className="text-xs text-muted-foreground">Synthwave 80s</p>
               </div>
               <div 
                 onClick={() => handleFeatureClick("Karaoke")}
-                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-cyan/30 transition-colors"
+                className={`bg-card/50 backdrop-blur-sm rounded-xl p-4 border cursor-pointer transition-all ${activeFeature === "Karaoke" ? "border-neon-cyan/50 bg-neon-cyan/10" : "border-border/50 hover:border-neon-cyan/30"}`}
               >
                 <Mic className="w-8 h-8 text-neon-cyan mb-3" />
                 <h4 className="font-title text-lg text-foreground">Karaoke</h4>
-                <p className="text-xs text-muted-foreground">Graba y comparte</p>
+                <p className="text-xs text-muted-foreground">Próximamente</p>
               </div>
               <div 
                 onClick={() => handleFeatureClick("Concursos")}
-                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-magenta/30 transition-colors"
+                className={`bg-card/50 backdrop-blur-sm rounded-xl p-4 border cursor-pointer transition-all ${activeFeature === "Concursos" ? "border-neon-magenta/50 bg-neon-magenta/10" : "border-border/50 hover:border-neon-magenta/30"}`}
               >
                 <Trophy className="w-8 h-8 text-neon-magenta mb-3" />
                 <h4 className="font-title text-lg text-foreground">Concursos</h4>
-                <p className="text-xs text-muted-foreground">Rankings semanales</p>
+                <p className="text-xs text-muted-foreground">¡Participa!</p>
               </div>
               <div 
                 onClick={() => handleFeatureClick("En Vivo")}
-                className="bg-card/50 backdrop-blur-sm rounded-xl p-4 border border-border/50 cursor-pointer hover:border-neon-red/30 transition-colors"
+                className={`bg-card/50 backdrop-blur-sm rounded-xl p-4 border cursor-pointer transition-all ${activeFeature === "En Vivo" ? "border-neon-red/50 bg-neon-red/10" : "border-border/50 hover:border-neon-red/30"}`}
               >
-                <Play className="w-8 h-8 text-neon-red mb-3" />
-                <h4 className="font-title text-lg text-foreground">En Vivo</h4>
-                <p className="text-xs text-muted-foreground">24/7 streaming</p>
+                <Radio className="w-8 h-8 text-neon-red mb-3" />
+                <h4 className="font-title text-lg text-foreground">Radio 24/7</h4>
+                <p className="text-xs text-muted-foreground">Próximamente</p>
               </div>
             </div>
 
             <Button variant="neon" size="lg" onClick={handlePlayNow}>
-              <Music className="w-4 h-4 mr-2" />
-              Escuchar Ahora
+              <Play className="w-4 h-4 mr-2" />
+              Reproducir Ahora
             </Button>
           </div>
 
@@ -139,7 +185,7 @@ export const MusicSection = () => {
                 </div>
                 <div>
                   <h4 className="font-title text-xl text-foreground">Top Canciones</h4>
-                  <p className="text-sm text-muted-foreground">Lo más escuchado esta semana</p>
+                  <p className="text-sm text-muted-foreground">Las favoritas de los fans</p>
                 </div>
               </div>
             </div>
@@ -171,6 +217,12 @@ export const MusicSection = () => {
                   <span className="text-xs text-muted-foreground">{song.plays}</span>
                 </div>
               ))}
+            </div>
+
+            <div className="p-4 border-t border-border/50 text-center">
+              <p className="text-xs text-muted-foreground">
+                🎧 Usa el reproductor inferior para escuchar la música
+              </p>
             </div>
           </div>
         </div>

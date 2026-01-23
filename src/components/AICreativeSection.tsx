@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Sparkles, Image, FileImage, Printer, Download, Share2, Loader2, RefreshCw } from "lucide-react";
+import { useState, useRef } from "react";
+import { Sparkles, Image, FileImage, Printer, Download, Share2, Loader2, RefreshCw, Upload, User, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,23 +8,29 @@ const aiFeatures = [
   {
     icon: Image,
     title: "Fotos con Personajes",
-    description: "Hazte una foto virtual con Eleven, Dustin o cualquier personaje de la serie.",
+    description: "Sube tu foto y aparece junto a Eleven, Dustin o cualquier personaje de la serie.",
     action: "foto",
-    result: "Tu foto con Eleven está lista. ¡Descárgala o compártela!",
+    result: "¡Tu foto con personajes de Stranger Things está lista!",
+    requiresPhoto: true,
   },
   {
     icon: FileImage,
     title: "Generador de Posters",
-    description: "Crea posters personalizados con tu nombre en el estilo icónico de Stranger Things.",
+    description: "Crea posters personalizados con tu foto y nombre en el estilo icónico de Stranger Things.",
     action: "poster",
     result: "Tu póster personalizado de Stranger Things está listo.",
+    requiresPhoto: false,
+    requiresName: true,
   },
   {
     icon: Printer,
-    title: "Tarjetas Imprimibles",
-    description: "Diseña invitaciones, tarjetas de cumpleaños y más con temática de la serie.",
+    title: "Tarjetas de Cumpleaños",
+    description: "Diseña tarjetas personalizadas con nombre, fecha y tu foto como protagonista.",
     action: "tarjeta",
     result: "Tu tarjeta temática está lista para imprimir.",
+    requiresPhoto: false,
+    requiresName: true,
+    requiresDate: true,
   },
 ];
 
@@ -39,16 +45,76 @@ export const AICreativeSection = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [currentAction, setCurrentAction] = useState<string | null>(null);
+  
+  // Form fields
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFeatureClick = async (action: string) => {
-    setSelectedFeature(action);
-    setIsGenerating(true);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: "La imagen debe ser menor de 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUserPhoto(event.target?.result as string);
+        toast({
+          title: "¡Foto cargada!",
+          description: "Tu foto está lista para usar.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFeatureClick = (action: string) => {
+    setCurrentAction(action);
+    setShowModal(true);
     setGeneratedImage(null);
+  };
+
+  const handleGenerate = async () => {
+    if (!currentAction) return;
+    
+    const feature = aiFeatures.find((f) => f.action === currentAction);
+    
+    // Validation
+    if (feature?.requiresPhoto && !userPhoto) {
+      toast({
+        title: "Foto requerida",
+        description: "Por favor, sube una foto para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedFeature(currentAction);
+    setIsGenerating(true);
+    setShowModal(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-image", {
-        body: { type: action },
+        body: { 
+          type: currentAction,
+          userPhoto: userPhoto,
+          userName: userName.trim() || undefined,
+          birthDate: birthDate || undefined,
+          recipientName: recipientName.trim() || undefined,
+        },
       });
 
       if (error) {
@@ -63,7 +129,6 @@ export const AICreativeSection = () => {
         setGeneratedImage(data.imageUrl);
         setGenerationCount((prev) => prev + 1);
 
-        const feature = aiFeatures.find((f) => f.action === action);
         toast({
           title: "¡Creación generada con IA!",
           description: feature?.result || "Tu contenido está listo.",
@@ -85,7 +150,6 @@ export const AICreativeSection = () => {
 
   const handleAction = (action: typeof actions[0]) => {
     if (action.label === "Descargar" && generatedImage) {
-      // Create download link
       const link = document.createElement("a");
       link.href = generatedImage;
       link.download = `stranger-things-${selectedFeature}-${Date.now()}.png`;
@@ -93,8 +157,17 @@ export const AICreativeSection = () => {
       link.click();
       document.body.removeChild(link);
       toast({ title: "Descarga iniciada", description: action.message });
+    } else if (action.label === "Imprimir" && generatedImage) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html><head><title>Imprimir - Stranger Things</title></head>
+          <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+            <img src="${generatedImage}" style="max-width:100%;max-height:100vh;" onload="window.print();window.close();" />
+          </body></html>
+        `);
+      }
     } else if (action.label === "Compartir" && generatedImage) {
-      // Copy image to clipboard or show share options
       if (navigator.share) {
         navigator.share({
           title: "Mi creación de Stranger Things",
@@ -105,15 +178,24 @@ export const AICreativeSection = () => {
         navigator.clipboard.writeText(window.location.href);
         toast({ title: "Enlace copiado", description: action.message });
       }
-    } else {
-      toast({ title: action.label, description: action.message });
     }
   };
 
   const handleReset = () => {
     setGeneratedImage(null);
     setSelectedFeature(null);
+    setUserPhoto(null);
+    setUserName("");
+    setRecipientName("");
+    setBirthDate("");
   };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setCurrentAction(null);
+  };
+
+  const currentFeature = aiFeatures.find((f) => f.action === currentAction);
 
   return (
     <section id="ia" className="relative py-20 md:py-32">
@@ -145,7 +227,7 @@ export const AICreativeSection = () => {
             CREA CON <span className="gradient-text">IA</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Usa inteligencia artificial para crear contenido único de Stranger Things. ¡Gratis para todos los fans!
+            Sube tu foto y crea contenido único de Stranger Things. ¡Personaliza con tu nombre y fecha!
           </p>
           {generationCount > 0 && (
             <p className="text-sm text-neon-cyan mt-2">{generationCount} creaciones generadas en esta sesión</p>
@@ -172,22 +254,30 @@ export const AICreativeSection = () => {
                       {feature.title}
                     </h3>
                     <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    <div className="flex gap-2 mt-2">
+                      {feature.requiresPhoto && (
+                        <span className="text-xs bg-neon-cyan/20 text-neon-cyan px-2 py-0.5 rounded">Requiere foto</span>
+                      )}
+                      {feature.requiresName && (
+                        <span className="text-xs bg-neon-magenta/20 text-neon-magenta px-2 py-0.5 rounded">Personalizable</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
             })}
 
             <div className="pt-4 flex gap-3">
-              <Button variant="neon-magenta" size="lg" onClick={() => handleFeatureClick("poster")} disabled={isGenerating}>
+              <Button variant="neon-magenta" size="lg" onClick={() => handleFeatureClick("foto")} disabled={isGenerating}>
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generando con IA...
+                    Generando...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Probar Ahora - ¡Gratis!
+                    <Upload className="w-4 h-4 mr-2" />
+                    Subir mi Foto
                   </>
                 )}
               </Button>
@@ -209,6 +299,7 @@ export const AICreativeSection = () => {
                   <div className="text-center">
                     <Loader2 className="w-16 h-16 text-neon-magenta mx-auto mb-4 animate-spin" />
                     <p className="font-display text-sm text-muted-foreground tracking-wider">GENERANDO CON IA...</p>
+                    <p className="text-xs text-muted-foreground mt-2">Esto puede tardar hasta 30 segundos</p>
                     <div className="mt-4 w-48 h-2 bg-muted/50 rounded-full mx-auto overflow-hidden">
                       <div className="h-full bg-neon-magenta rounded-full animate-pulse" style={{ width: "60%" }} />
                     </div>
@@ -216,10 +307,10 @@ export const AICreativeSection = () => {
                 ) : generatedImage ? (
                   <img src={generatedImage} alt="Creación generada por IA" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="text-center">
+                  <div className="text-center p-8">
                     <Sparkles className="w-16 h-16 text-neon-magenta/50 mx-auto mb-4" />
                     <p className="font-display text-sm text-muted-foreground tracking-wider">TU CREACIÓN AQUÍ</p>
-                    <p className="text-xs text-muted-foreground mt-2">Selecciona una opción para empezar</p>
+                    <p className="text-xs text-muted-foreground mt-2">Selecciona una opción y sube tu foto</p>
                   </div>
                 )}
               </div>
@@ -228,7 +319,7 @@ export const AICreativeSection = () => {
               <div className="p-4 bg-card/80 backdrop-blur-sm border-t border-border/50">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    {generatedImage ? "Listo para compartir" : isGenerating ? "Procesando..." : "Esperando creación..."}
+                    {generatedImage ? "¡Listo! Descarga o comparte" : isGenerating ? "Procesando..." : "Esperando creación..."}
                   </span>
                   <div className="flex gap-2">
                     {actions.map((action) => {
@@ -256,6 +347,122 @@ export const AICreativeSection = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal for customization */}
+      {showModal && currentFeature && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={closeModal}>
+          <div className="bg-card rounded-2xl border border-border/50 max-w-md w-full p-6 shadow-[0_0_60px_hsl(var(--neon-magenta)/0.3)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="font-title text-2xl text-foreground">{currentFeature.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{currentFeature.description}</p>
+              </div>
+              <button onClick={closeModal} className="p-1 hover:bg-muted rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Photo upload */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <Upload className="w-4 h-4 inline mr-2" />
+                  Tu Foto {currentFeature.requiresPhoto ? "(requerida)" : "(opcional)"}
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                {userPhoto ? (
+                  <div className="relative">
+                    <img src={userPhoto} alt="Tu foto" className="w-full h-32 object-cover rounded-lg" />
+                    <button 
+                      onClick={() => setUserPhoto(null)}
+                      className="absolute top-2 right-2 p-1 bg-destructive rounded-full"
+                    >
+                      <X className="w-4 h-4 text-destructive-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-neon-magenta/50 transition-colors"
+                  >
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Haz clic o arrastra una imagen</span>
+                    <span className="text-xs text-muted-foreground">Máximo 5MB</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Name field for poster */}
+              {(currentFeature.requiresName || currentAction === "poster") && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    <User className="w-4 h-4 inline mr-2" />
+                    Tu Nombre (para el póster)
+                  </label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Ej: JUAN"
+                    maxLength={20}
+                    className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                  />
+                </div>
+              )}
+
+              {/* Birthday card fields */}
+              {currentAction === "tarjeta" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      <User className="w-4 h-4 inline mr-2" />
+                      Nombre del Cumpleañero/a
+                    </label>
+                    <input
+                      type="text"
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      placeholder="Ej: MARÍA"
+                      maxLength={20}
+                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      <Calendar className="w-4 h-4 inline mr-2" />
+                      Fecha del Cumpleaños
+                    </label>
+                    <input
+                      type="text"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      placeholder="Ej: 15 de Marzo"
+                      maxLength={30}
+                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button variant="neon-magenta" className="flex-1" onClick={handleGenerate}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generar con IA
+              </Button>
+              <Button variant="outline" onClick={closeModal}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Using local audio files
 const playlist = [
   {
     title: "80s Retro Synthwave",
@@ -26,7 +27,7 @@ export const MusicPlayer = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [errorStreak, setErrorStreak] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
   const current = playlist[currentTrack];
@@ -34,135 +35,148 @@ export const MusicPlayer = () => {
   // Initialize audio element
   useEffect(() => {
     const audio = new Audio();
-    audio.preload = "auto";
-    audio.loop = false;
-    audio.crossOrigin = "anonymous";
+    audio.preload = "metadata";
+    audio.volume = 0.7;
     audioRef.current = audio;
 
-    // Handle track end
     const handleEnded = () => {
       setCurrentTrack((prev) => (prev + 1) % playlist.length);
     };
 
-    // Handle time update for progress
     const handleTimeUpdate = () => {
-      if (audio.duration) {
+      if (audio.duration && !isNaN(audio.duration)) {
         setProgress((audio.currentTime / audio.duration) * 100);
       }
     };
 
-    // Handle errors
-    const handleError = () => {
-      // If a track fails to load/play, try the next one. If all fail, stop.
-      console.error("Audio error, trying next track");
-      setErrorStreak((prev) => {
-        const next = prev + 1;
-        if (next >= playlist.length) {
-          setIsPlaying(false);
-        } else {
-          setCurrentTrack((t) => (t + 1) % playlist.length);
-        }
-        return next;
-      });
+    const handleCanPlay = () => {
+      setIsLoaded(true);
+      console.log("Audio ready to play:", audio.src);
     };
 
-    const handleCanPlay = () => {
-      // Reset error streak when a track can be played
-      setErrorStreak(0);
+    const handleError = (e: Event) => {
+      console.error("Audio error:", e);
+      setIsLoaded(false);
+    };
+
+    const handleLoadStart = () => {
+      setIsLoaded(false);
     };
 
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("error", handleError);
     audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("loadstart", handleLoadStart);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("error", handleError);
       audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("loadstart", handleLoadStart);
       audio.pause();
       audio.src = "";
     };
   }, []);
 
-  // Load new track when currentTrack changes
+  // Load track when currentTrack changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    console.log("Loading track:", current.src);
     audio.src = current.src;
     audio.load();
     setProgress(0);
+    setIsLoaded(false);
 
+    // If was playing, continue playing new track
     if (isPlaying) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
+      const playWhenReady = () => {
+        audio.play().catch((err) => {
+          console.error("Failed to play:", err);
           setIsPlaying(false);
         });
-      }
+        audio.removeEventListener("canplay", playWhenReady);
+      };
+      audio.addEventListener("canplay", playWhenReady);
     }
-  }, [currentTrack, current.src]);
+  }, [currentTrack]);
 
   // Handle play/pause
-  useEffect(() => {
+  const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (isPlaying) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          setIsPlaying(false);
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
           toast({
-            title: "Haz clic en Play",
-            description: "El navegador requiere interacción para reproducir audio.",
+            title: `▶ ${current.title}`,
+            description: current.artist,
+          });
+        })
+        .catch((err) => {
+          console.error("Play failed:", err);
+          toast({
+            title: "Haz clic para reproducir",
+            description: "El navegador requiere interacción del usuario.",
           });
         });
-      }
-    } else {
-      audio.pause();
     }
-  }, [isPlaying, toast]);
+  }, [isPlaying, current, toast]);
 
   // Handle mute
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.muted = isMuted;
+  const toggleMute = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = !isMuted;
+      setIsMuted(!isMuted);
     }
   }, [isMuted]);
 
-  const togglePlay = useCallback(() => {
-    setIsPlaying((p) => !p);
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted((m) => !m);
-  }, []);
-
   const nextTrack = useCallback(() => {
-    setCurrentTrack((prev) => (prev + 1) % playlist.length);
+    const nextIndex = (currentTrack + 1) % playlist.length;
+    setCurrentTrack(nextIndex);
     toast({
       title: "Siguiente pista",
-      description: playlist[(currentTrack + 1) % playlist.length].title,
+      description: playlist[nextIndex].title,
     });
   }, [currentTrack, toast]);
 
   const prevTrack = useCallback(() => {
-    setCurrentTrack((prev) => (prev - 1 + playlist.length) % playlist.length);
+    const prevIndex = (currentTrack - 1 + playlist.length) % playlist.length;
+    setCurrentTrack(prevIndex);
     toast({
       title: "Pista anterior",
-      description: playlist[(currentTrack - 1 + playlist.length) % playlist.length].title,
+      description: playlist[prevIndex].title,
     });
   }, [currentTrack, toast]);
 
+  // Click on progress bar to seek
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    audio.currentTime = percent * audio.duration;
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-primary/30">
-      {/* Progress bar */}
-      <div className="h-1 bg-muted/50">
+      {/* Progress bar - clickable */}
+      <div 
+        className="h-1 bg-muted/50 cursor-pointer group"
+        onClick={handleProgressClick}
+      >
         <div
-          className="h-full bg-gradient-to-r from-neon-red to-neon-magenta transition-all duration-300"
+          className="h-full bg-gradient-to-r from-neon-red to-neon-magenta transition-all duration-100 group-hover:h-2"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -171,8 +185,8 @@ export const MusicPlayer = () => {
         <div className="flex items-center justify-between gap-4">
           {/* Track Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-neon-red/30 to-neon-magenta/30 flex items-center justify-center flex-shrink-0">
-              <Music className={`w-5 h-5 md:w-6 md:h-6 text-neon-red ${isPlaying ? "animate-pulse" : ""}`} />
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-neon-red/30 to-neon-magenta/30 flex items-center justify-center flex-shrink-0 ${isPlaying ? 'animate-pulse' : ''}`}>
+              <Music className="w-5 h-5 md:w-6 md:h-6 text-neon-red" />
             </div>
             <div className="min-w-0">
               <p className="font-medium text-foreground text-sm md:text-base truncate">{current.title}</p>
@@ -209,7 +223,7 @@ export const MusicPlayer = () => {
             </button>
           </div>
 
-          {/* Volume */}
+          {/* Volume & Track info */}
           <div className="flex items-center gap-3 flex-1 justify-end">
             <span className="hidden md:block text-xs text-muted-foreground font-display">
               {currentTrack + 1}/{playlist.length}
