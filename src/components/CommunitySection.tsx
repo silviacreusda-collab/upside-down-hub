@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, MessageSquare, MapPin, ShoppingBag, ArrowRight, X, CheckCircle } from "lucide-react";
+import { Users, MessageSquare, MapPin, ShoppingBag, ArrowRight, X, CheckCircle, Loader2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const communityFeatures = [
   {
@@ -37,7 +38,9 @@ export const CommunitySection = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<typeof communityFeatures[0] | null>(null);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [joined, setJoined] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleFeatureClick = (feature: typeof communityFeatures[0]) => {
@@ -45,7 +48,7 @@ export const CommunitySection = () => {
     setShowModal(true);
   };
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast({
         title: "Email inválido",
@@ -55,13 +58,45 @@ export const CommunitySection = () => {
       return;
     }
 
-    setJoined(true);
-    toast({
-      title: "¡Bienvenido a la comunidad!",
-      description: "Te hemos enviado un email de confirmación.",
-    });
-    setShowModal(false);
-    setEmail("");
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("community_members").insert({
+        email: email.trim().toLowerCase(),
+        name: name.trim() || null,
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast({
+            title: "Ya estás registrado",
+            description: "Este email ya forma parte de nuestra comunidad.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setJoined(true);
+      toast({
+        title: "¡Bienvenido a la comunidad!",
+        description: "Tu registro se ha completado correctamente.",
+      });
+      setShowModal(false);
+      setEmail("");
+      setName("");
+    } catch (error) {
+      console.error("Error joining community:", error);
+      toast({
+        title: "Error al registrar",
+        description: "Hubo un problema. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleExploreClick = () => {
@@ -180,21 +215,48 @@ export const CommunitySection = () => {
               </div>
             ) : (
               <>
-                <div className="mb-4">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    className="w-full px-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50 transition-colors"
-                  />
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      <User className="w-4 h-4 inline mr-2" />
+                      Tu Nombre (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Nombre o apodo"
+                      className="w-full px-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      className="w-full px-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50 transition-colors"
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
                 
                 <div className="flex gap-3">
-                  <Button variant="neon-magenta" className="flex-1" onClick={handleJoin}>
-                    Unirme ahora
+                  <Button variant="neon-magenta" className="flex-1" onClick={handleJoin} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Registrando...
+                      </>
+                    ) : (
+                      "Unirme ahora"
+                    )}
                   </Button>
-                  <Button variant="outline" onClick={() => setShowModal(false)}>
+                  <Button variant="outline" onClick={() => setShowModal(false)} disabled={isSubmitting}>
                     Cancelar
                   </Button>
                 </div>
