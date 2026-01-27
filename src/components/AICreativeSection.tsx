@@ -401,53 +401,53 @@ export const AICreativeSection = () => {
               {/* Name field for poster */}
               {(currentFeature.requiresName || currentAction === "poster") && (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    <User className="w-4 h-4 inline mr-2" />
-                    Tu Nombre (para el póster)
+                  <label className="block text-xs font-medium text-foreground mb-1">
+                    <User className="w-3 h-3 inline mr-1" />
+                    Tu Nombre
                   </label>
                   <input
                     type="text"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    placeholder="Ej: JUAN"
-                    maxLength={20}
-                    className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                    placeholder="JUAN"
+                    maxLength={15}
+                    className="w-full px-3 py-2 text-sm bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
                   />
                 </div>
               )}
 
-              {/* Birthday card fields */}
+              {/* Birthday card fields - compact layout */}
               {currentAction === "tarjeta" && (
-                <>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      <User className="w-4 h-4 inline mr-2" />
-                      Nombre del Cumpleañero/a
+                    <label className="block text-xs font-medium text-foreground mb-1">
+                      <User className="w-3 h-3 inline mr-1" />
+                      Cumpleañero/a
                     </label>
                     <input
                       type="text"
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder="Ej: MARÍA"
-                      maxLength={20}
-                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                      placeholder="MARÍA"
+                      maxLength={12}
+                      className="w-full px-2 py-1.5 text-sm bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      <Calendar className="w-4 h-4 inline mr-2" />
-                      Fecha del Cumpleaños
+                    <label className="block text-xs font-medium text-foreground mb-1">
+                      <Calendar className="w-3 h-3 inline mr-1" />
+                      Fecha
                     </label>
                     <input
                       type="text"
                       value={birthDate}
                       onChange={(e) => setBirthDate(e.target.value)}
-                      placeholder="Ej: 15 de Marzo"
-                      maxLength={30}
-                      className="w-full px-4 py-3 bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
+                      placeholder="15 Marzo"
+                      maxLength={15}
+                      className="w-full px-2 py-1.5 text-sm bg-muted/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-neon-magenta/50"
                     />
                   </div>
-                </>
+                </div>
               )}
             </div>
 
