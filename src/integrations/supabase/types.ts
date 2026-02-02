@@ -65,6 +65,39 @@ export type Database = {
         }
         Relationships: []
       }
+      karaoke_submissions: {
+        Row: {
+          audio_url: string
+          created_at: string
+          id: string
+          song_id: number
+          song_title: string
+          user_email: string
+          user_name: string
+          votes: number
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          id?: string
+          song_id: number
+          song_title: string
+          user_email: string
+          user_name: string
+          votes?: number
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          id?: string
+          song_id?: number
+          song_title?: string
+          user_email?: string
+          user_name?: string
+          votes?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
