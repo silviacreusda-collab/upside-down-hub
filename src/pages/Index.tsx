@@ -5,12 +5,11 @@ import { EventsSection } from "@/components/EventsSection";
 import { MerchSection } from "@/components/MerchSection";
 import { CommunitySection } from "@/components/CommunitySection";
 import { AICreativeSection } from "@/components/AICreativeSection";
-import { MusicSection } from "@/components/MusicSection";
+import { KaraokeSystem } from "@/components/KaraokeSystem";
 import { ContestsSection } from "@/components/ContestsSection";
 import { ContactSection } from "@/components/ContactSection";
 import { Footer } from "@/components/Footer";
 import { FloatingParticles } from "@/components/FloatingParticles";
-import { MusicPlayer } from "@/components/MusicPlayer";
 import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 
 const Index = () => {
@@ -28,23 +27,20 @@ const Index = () => {
       <Navbar />
       
       {/* Main content */}
-      <main className="pb-20">
+      <main>
         <HeroSection />
         <NewsSection />
         <EventsSection />
         <MerchSection />
         <CommunitySection />
         <AICreativeSection />
-        <MusicSection />
+        <KaraokeSystem />
         <ContestsSection />
         <ContactSection />
       </main>
       
       {/* Footer */}
       <Footer />
-      
-      {/* Fixed Music Player */}
-      <MusicPlayer />
     </div>
   );
 };
