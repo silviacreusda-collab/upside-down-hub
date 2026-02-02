@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, MessageSquare, MapPin, ShoppingBag, ArrowRight, X, CheckCircle, Loader2, User } from "lucide-react";
+import { Users, MessageSquare, ShoppingBag, ArrowRight, X, CheckCircle, Loader2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,16 +12,6 @@ const communityFeatures = [
     stats: "2.5K+ posts",
     iconColor: "text-neon-red",
     bgColor: "bg-neon-red/10",
-    action: "foros",
-  },
-  {
-    icon: MapPin,
-    title: "Comunidad Local",
-    description: "Encuentra fans en tu ciudad y organiza quedadas temáticas.",
-    stats: "50+ ciudades",
-    iconColor: "text-neon-cyan",
-    bgColor: "bg-neon-cyan/10",
-    action: "local",
   },
   {
     icon: ShoppingBag,
@@ -30,23 +20,16 @@ const communityFeatures = [
     stats: "300+ anuncios",
     iconColor: "text-neon-magenta",
     bgColor: "bg-neon-magenta/10",
-    action: "mercado",
   },
 ];
 
 export const CommunitySection = () => {
   const [showModal, setShowModal] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState<typeof communityFeatures[0] | null>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [joined, setJoined] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const handleFeatureClick = (feature: typeof communityFeatures[0]) => {
-    setSelectedFeature(feature);
-    setShowModal(true);
-  };
 
   const handleJoin = async () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -82,7 +65,7 @@ export const CommunitySection = () => {
       setJoined(true);
       toast({
         title: "¡Bienvenido a la comunidad!",
-        description: "Tu registro se ha completado correctamente.",
+        description: "Recibirás información sobre eventos y novedades.",
       });
       setShowModal(false);
       setEmail("");
@@ -97,11 +80,6 @@ export const CommunitySection = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleExploreClick = () => {
-    setSelectedFeature(null);
-    setShowModal(true);
   };
 
   return (
@@ -129,14 +107,13 @@ export const CommunitySection = () => {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-3xl mx-auto mb-12">
           {communityFeatures.map((feature) => {
             const Icon = feature.icon;
             return (
               <div
                 key={feature.title}
-                onClick={() => handleFeatureClick(feature)}
-                className="group relative bg-card/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-border/50 card-neon-hover cursor-pointer"
+                className="group relative bg-card/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-border/50 card-neon-hover"
               >
                 {/* Icon */}
                 <div className={`w-14 h-14 rounded-xl ${feature.bgColor} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
@@ -155,11 +132,6 @@ export const CommunitySection = () => {
                 <div className={`inline-flex items-center gap-2 text-sm font-display tracking-wider ${feature.iconColor}`}>
                   {feature.stats}
                 </div>
-                
-                {/* Hover effect */}
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-neon-magenta/5 to-transparent" />
-                </div>
               </div>
             );
           })}
@@ -167,7 +139,7 @@ export const CommunitySection = () => {
 
         {/* CTA */}
         <div className="text-center">
-          <Button variant="neon-magenta" size="lg" onClick={handleExploreClick}>
+          <Button variant="neon-magenta" size="lg" onClick={() => setShowModal(true)}>
             {joined ? (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
@@ -175,7 +147,7 @@ export const CommunitySection = () => {
               </>
             ) : (
               <>
-                Explorar Comunidad <ArrowRight className="w-4 h-4 ml-2" />
+                Unirse a la Comunidad <ArrowRight className="w-4 h-4 ml-2" />
               </>
             )}
           </Button>
@@ -197,12 +169,10 @@ export const CommunitySection = () => {
             </div>
             
             <h3 className="font-title text-2xl text-foreground mb-2">
-              {selectedFeature ? selectedFeature.title : "Únete a la Comunidad"}
+              Únete a la Comunidad
             </h3>
             <p className="text-muted-foreground mb-6">
-              {selectedFeature 
-                ? selectedFeature.description 
-                : "Regístrate para acceder a todos los beneficios de nuestra comunidad de fans."}
+              Regístrate para recibir noticias exclusivas, acceso a eventos y beneficios de la comunidad.
             </p>
             
             {joined ? (
