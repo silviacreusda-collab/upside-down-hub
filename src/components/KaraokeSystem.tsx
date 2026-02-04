@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, Upload, Play, ThumbsUp, Loader2, Music, Award, X, User, Mail, Send } from "lucide-react";
+import { Mic, Upload, Play, Pause, ThumbsUp, Loader2, Music, Award, X, User, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ export const KaraokeSystem = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [votedIds, setVotedIds] = useState<string[]>([]);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [playingLabel, setPlayingLabel] = useState<string>("");
   
   // Form state
   const [selectedSong, setSelectedSong] = useState<number | null>(null);
@@ -198,17 +199,57 @@ export const KaraokeSystem = () => {
     }
   };
 
-  const handlePlay = (id: string, url: string) => {
-    if (playingId === id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
-    } else {
-      if (audioRef.current) {
-        audioRef.current.src = url;
-        audioRef.current.play();
-        setPlayingId(id);
-      }
+  const handlePlay = async (id: string, url: string, label: string) => {
+    const audio = audioRef.current;
+    if (!audio) {
+      toast({
+        title: "Reproductor no disponible",
+        description: "Recarga la página e inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (playingId === id) {
+      audio.pause();
+      setPlayingId(null);
+      setPlayingLabel("");
+      return;
+    }
+
+    try {
+      // Stop any previous playback
+      audio.pause();
+      audio.currentTime = 0;
+
+      audio.src = url;
+      audio.load();
+
+      setPlayingLabel(label);
+      const playPromise = audio.play();
+      if (playPromise) await playPromise;
+      setPlayingId(id);
+    } catch (err) {
+      console.error("Audio play error:", err);
+      setPlayingId(null);
+      setPlayingLabel("");
+      toast({
+        title: "No se pudo reproducir",
+        description:
+          "Tu navegador puede estar bloqueando el audio. Sube el volumen, quita el modo silencio y vuelve a pulsar Play.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAudioError = () => {
+    setPlayingId(null);
+    setPlayingLabel("");
+    toast({
+      title: "Error de audio",
+      description: "No se pudo cargar la grabación. Intenta con otra o recarga.",
+      variant: "destructive",
+    });
   };
 
   return (
@@ -328,14 +369,19 @@ export const KaraokeSystem = () => {
                     </div>
 
                     <button
-                      onClick={() => handlePlay(sub.id, sub.audio_url)}
+                      onClick={() => handlePlay(sub.id, sub.audio_url, `${sub.user_name} — ${sub.song_title}`)}
                       className={`p-2 rounded-lg transition-colors ${
-                        playingId === sub.id 
-                          ? "bg-neon-cyan/30 text-neon-cyan" 
+                        playingId === sub.id
+                          ? "bg-neon-cyan/30 text-neon-cyan"
                           : "hover:bg-muted/50"
                       }`}
+                      aria-label={playingId === sub.id ? "Pausar" : "Reproducir"}
                     >
-                      <Play className="w-4 h-4" />
+                      {playingId === sub.id ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
                     </button>
 
                     <button
@@ -355,12 +401,40 @@ export const KaraokeSystem = () => {
               </div>
             )}
 
-            {/* Hidden audio element */}
-            <audio 
-              ref={audioRef} 
-              onEnded={() => setPlayingId(null)}
-              className="hidden"
-            />
+             {/* Audio player */}
+             <div className="mt-4">
+               {playingId ? (
+                 <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
+                   <p className="text-xs text-muted-foreground mb-2">
+                     Reproduciendo: <span className="text-foreground">{playingLabel}</span>
+                   </p>
+                   <audio
+                     ref={audioRef}
+                     controls
+                     playsInline
+                     preload="none"
+                     onEnded={() => {
+                       setPlayingId(null);
+                       setPlayingLabel("");
+                     }}
+                     onError={handleAudioError}
+                     className="w-full"
+                   />
+                 </div>
+               ) : (
+                 <audio
+                   ref={audioRef}
+                   playsInline
+                   preload="none"
+                   onEnded={() => {
+                     setPlayingId(null);
+                     setPlayingLabel("");
+                   }}
+                   onError={handleAudioError}
+                   className="hidden"
+                 />
+               )}
+             </div>
           </div>
         </div>
       </div>
