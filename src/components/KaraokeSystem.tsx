@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, Upload, Play, Pause, ThumbsUp, Loader2, Music, Award, X, User, Mail, Send } from "lucide-react";
+import { Mic, Upload, Play, Pause, Square, ThumbsUp, Loader2, Music, Award, X, User, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 interface KaraokeSubmission {
   id: string;
   user_name: string;
@@ -39,6 +39,26 @@ export const KaraokeSystem = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Audio recorder hook
+  const {
+    isRecording,
+    audioBlob: recordedBlob,
+    audioUrl: recordedUrl,
+    startRecording,
+    stopRecording,
+    clearRecording,
+    recordingTime,
+  } = useAudioRecorder({
+    onError: (msg) =>
+      toast({ title: "Error de micrófono", description: msg, variant: "destructive" }),
+  });
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   // Fetch submissions
   useEffect(() => {
@@ -82,10 +102,13 @@ export const KaraokeSystem = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedSong || !userName.trim() || !userEmail.trim() || !audioFile) {
+    // Accept either uploaded file or recorded blob
+    const audioToUpload = audioFile ?? recordedBlob;
+
+    if (!selectedSong || !userName.trim() || !userEmail.trim() || !audioToUpload) {
       toast({
         title: "Completa todos los campos",
-        description: "Selecciona canción, nombre, email y archivo de audio.",
+        description: "Selecciona canción, nombre, email y graba o sube un audio.",
         variant: "destructive",
       });
       return;
@@ -104,11 +127,18 @@ export const KaraokeSystem = () => {
     setUploading(true);
 
     try {
-      // Upload audio to storage
-      const fileName = `${Date.now()}-${audioFile.name.replace(/[^a-zA-Z0-9.-]/g, '')}`;
+      // Determine file extension based on source
+      let extension = "webm";
+      if (audioFile) {
+        const parts = audioFile.name.split(".");
+        extension = parts.length > 1 ? parts.pop()! : "webm";
+      }
+
+      const fileName = `${Date.now()}-recording.${extension}`;
+
       const { error: uploadError } = await supabase.storage
         .from("karaoke-recordings")
-        .upload(fileName, audioFile);
+        .upload(fileName, audioToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -142,6 +172,7 @@ export const KaraokeSystem = () => {
       setUserName("");
       setUserEmail("");
       setAudioFile(null);
+      clearRecording();
       
       // Refresh submissions
       fetchSubmissions();
@@ -495,36 +526,97 @@ export const KaraokeSystem = () => {
                 />
               </div>
 
-              {/* Audio file */}
+              {/* Audio - Record or Upload */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   <Mic className="w-4 h-4 inline mr-2" />
-                  Archivo de Audio *
+                  Tu Grabación *
                 </label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="audio/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={uploading}
-                />
-                {audioFile ? (
+
+                {/* Recording controls */}
+                {!audioFile && !recordedBlob && (
+                  <div className="space-y-3">
+                    {isRecording ? (
+                      <div className="p-4 bg-neon-magenta/10 border border-neon-magenta/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 bg-neon-magenta rounded-full animate-pulse" />
+                            <span className="text-neon-magenta font-medium">Grabando...</span>
+                          </div>
+                          <span className="font-display text-neon-magenta">{formatTime(recordingTime)}</span>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={stopRecording}
+                        >
+                          <Square className="w-4 h-4 mr-2" />
+                          Detener grabación
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          className="w-full h-16 border-neon-magenta/30 hover:bg-neon-magenta/10 hover:border-neon-magenta/50"
+                          onClick={startRecording}
+                          disabled={uploading}
+                        >
+                          <Mic className="w-5 h-5 mr-2 text-neon-magenta" />
+                          <span className="text-neon-magenta">Grabar ahora</span>
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 border-t border-border" />
+                          <span className="text-xs text-muted-foreground">o</span>
+                          <div className="flex-1 border-t border-border" />
+                        </div>
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="audio/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full h-12 border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-2 hover:border-neon-yellow/50 transition-colors"
+                          disabled={uploading}
+                        >
+                          <Upload className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Subir archivo (MP3, WAV...)</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Recorded preview */}
+                {recordedBlob && !audioFile && (
+                  <div className="p-3 bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-neon-cyan font-medium">Grabación lista ({formatTime(recordingTime)})</span>
+                      <button
+                        onClick={() => {
+                          clearRecording();
+                        }}
+                        className="p-1 hover:bg-muted rounded"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <audio src={recordedUrl ?? undefined} controls className="w-full" />
+                  </div>
+                )}
+
+                {/* Uploaded file preview */}
+                {audioFile && (
                   <div className="p-3 bg-neon-cyan/10 border border-neon-cyan/30 rounded-lg flex items-center justify-between">
                     <span className="text-sm text-neon-cyan truncate">{audioFile.name}</span>
                     <button onClick={() => setAudioFile(null)} className="p-1 hover:bg-muted rounded">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-neon-yellow/50 transition-colors"
-                  >
-                    <Upload className="w-6 h-6 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Seleccionar archivo (MP3, WAV...)</span>
-                    <span className="text-xs text-muted-foreground">Máximo 10MB</span>
-                  </button>
                 )}
               </div>
             </div>
