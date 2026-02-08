@@ -21,6 +21,16 @@ const karaokeSongs = [
   { id: 5, title: "Hazy Shade of Winter", artist: "The Bangles" },
 ];
 
+const guessAudioExtensionFromMime = (mime?: string) => {
+  const m = (mime ?? "").toLowerCase();
+  if (m.includes("audio/webm")) return "webm";
+  if (m.includes("audio/ogg")) return "ogg";
+  if (m.includes("audio/mpeg") || m.includes("audio/mp3")) return "mp3";
+  if (m.includes("audio/wav")) return "wav";
+  if (m.includes("audio/mp4") || m.includes("audio/aac") || m.includes("audio/x-m4a")) return "m4a";
+  return "webm";
+};
+
 export const KaraokeSystem = () => {
   const [submissions, setSubmissions] = useState<KaraokeSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +68,13 @@ export const KaraokeSystem = () => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const closeUploadModal = () => {
+    if (isRecording) stopRecording();
+    clearRecording();
+    setAudioFile(null);
+    setShowUploadModal(false);
   };
 
   // Fetch submissions
@@ -127,18 +144,17 @@ export const KaraokeSystem = () => {
     setUploading(true);
 
     try {
-      // Determine file extension based on source
-      let extension = "webm";
-      if (audioFile) {
-        const parts = audioFile.name.split(".");
-        extension = parts.length > 1 ? parts.pop()! : "webm";
-      }
-
+      const contentType = (audioFile?.type || recordedBlob?.type || "audio/webm").toLowerCase();
+      const extension = guessAudioExtensionFromMime(contentType);
       const fileName = `${Date.now()}-recording.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from("karaoke-recordings")
-        .upload(fileName, audioToUpload);
+        .upload(fileName, audioToUpload, {
+          contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -472,14 +488,20 @@ export const KaraokeSystem = () => {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setShowUploadModal(false)}>
-          <div className="bg-card rounded-2xl border border-border/50 max-w-md w-full p-6 shadow-[0_0_60px_hsl(var(--neon-yellow)/0.3)]" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          onClick={closeUploadModal}
+        >
+          <div
+            className="bg-card rounded-2xl border border-border/50 max-w-md w-full p-6 shadow-[0_0_60px_hsl(var(--neon-yellow)/0.3)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="font-title text-2xl text-foreground">Subir Grabación</h3>
                 <p className="text-sm text-muted-foreground mt-1">Comparte tu interpretación</p>
               </div>
-              <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-muted rounded">
+              <button onClick={closeUploadModal} className="p-1 hover:bg-muted rounded">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -635,7 +657,7 @@ export const KaraokeSystem = () => {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setShowUploadModal(false)} disabled={uploading}>
+              <Button variant="outline" onClick={closeUploadModal} disabled={uploading}>
                 Cancelar
               </Button>
             </div>
