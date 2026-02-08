@@ -60,7 +60,14 @@ export function useAudioRecorder(
     clearRecording();
     chunksRef.current = [];
 
+    // Check if MediaRecorder is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      onError?.("Tu navegador no soporta grabación de audio. Prueba Chrome o Firefox.");
+      return;
+    }
+
     try {
+      // Request microphone permission
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -72,11 +79,18 @@ export function useAudioRecorder(
       streamRef.current = stream;
 
       // Determine best mimeType for desktop (Chrome/Firefox/Edge)
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg";
+      let mimeType = "audio/webm";
+      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+        mimeType = "audio/webm;codecs=opus";
+      } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+        mimeType = "audio/webm";
+      } else if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+        mimeType = "audio/ogg;codecs=opus";
+      } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        mimeType = "audio/mp4";
+      }
+
+      console.log("Using mimeType:", mimeType);
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
@@ -90,12 +104,14 @@ export function useAudioRecorder(
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
+        console.log("Recording complete. Blob size:", blob.size, "URL:", url);
         setAudioBlob(blob);
         setAudioUrl(url);
       };
 
-      mediaRecorder.onerror = () => {
-        onError?.("Error durante la grabación.");
+      mediaRecorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        onError?.("Error durante la grabación. Intenta de nuevo.");
         stopRecording();
       };
 
@@ -103,15 +119,26 @@ export function useAudioRecorder(
       setIsRecording(true);
       setRecordingTime(0);
 
+      console.log("Recording started successfully");
+
       // Start timer
       timerRef.current = window.setInterval(() => {
         setRecordingTime((prev) => prev + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Microphone access error:", err);
-      onError?.(
-        "No se pudo acceder al micrófono. Asegúrate de dar permiso al navegador."
-      );
+      
+      // Provide specific error messages
+      const error = err as { name?: string };
+      if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+        onError?.("Permiso de micrófono denegado. Haz clic en el icono del candado en la barra de direcciones y permite el acceso al micrófono.");
+      } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+        onError?.("No se encontró ningún micrófono. Conecta uno e intenta de nuevo.");
+      } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+        onError?.("El micrófono está siendo usado por otra aplicación. Ciérrala e intenta de nuevo.");
+      } else {
+        onError?.("No se pudo acceder al micrófono. Asegúrate de dar permiso al navegador.");
+      }
     }
   }, [clearRecording, onError, stopRecording]);
 
