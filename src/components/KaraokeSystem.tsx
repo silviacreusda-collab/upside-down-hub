@@ -448,29 +448,15 @@ export const KaraokeSystem = () => {
               </div>
             )}
 
-             {/* Audio player */}
+             {/* Audio player — single persistent element */}
              <div className="mt-4">
-               {playingId ? (
-                 <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
-                   <p className="text-xs text-muted-foreground mb-2">
-                     Reproduciendo: <span className="text-foreground">{playingLabel}</span>
-                   </p>
-                   <audio
-                     ref={audioRef}
-                     controls
-                     playsInline
-                     preload="none"
-                     onEnded={() => {
-                       setPlayingId(null);
-                       setPlayingLabel("");
-                     }}
-                     onError={handleAudioError}
-                     className="w-full"
-                   />
-                 </div>
-               ) : (
+               <div className={playingId ? "rounded-lg border border-border/50 bg-muted/20 p-3" : "hidden"}>
+                 <p className="text-xs text-muted-foreground mb-2">
+                   Reproduciendo: <span className="text-foreground">{playingLabel}</span>
+                 </p>
                  <audio
                    ref={audioRef}
+                   controls
                    playsInline
                    preload="none"
                    onEnded={() => {
@@ -478,9 +464,9 @@ export const KaraokeSystem = () => {
                      setPlayingLabel("");
                    }}
                    onError={handleAudioError}
-                   className="hidden"
+                   className="w-full"
                  />
-               )}
+               </div>
              </div>
           </div>
         </div>
