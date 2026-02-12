@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, Users, Newspaper, Calendar, ShoppingBag, Mic, Trophy, Sparkles } from "lucide-react";
+import { Menu, X, Users, Newspaper, Calendar, ShoppingBag, Music, Trophy, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 
 const navItems = [
@@ -8,7 +8,7 @@ const navItems = [
   { label: "Merch", href: "#merch", icon: ShoppingBag },
   { label: "Comunidad", href: "#comunidad", icon: Users },
   { label: "IA", href: "#ia", icon: Sparkles },
-  { label: "Karaoke", href: "#musica", icon: Mic },
+  { label: "Música", href: "#musica", icon: Music },
   { label: "Concursos", href: "#concursos", icon: Trophy },
 ];
 

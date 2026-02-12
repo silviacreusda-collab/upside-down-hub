@@ -5,7 +5,7 @@ import { EventsSection } from "@/components/EventsSection";
 import { MerchSection } from "@/components/MerchSection";
 import { CommunitySection } from "@/components/CommunitySection";
 import { AICreativeSection } from "@/components/AICreativeSection";
-import { KaraokeSystem } from "@/components/KaraokeSystem";
+import { AmbientMusicPlayer } from "@/components/AmbientMusicPlayer";
 import { ContestsSection } from "@/components/ContestsSection";
 import { ContactSection } from "@/components/ContactSection";
 import { Footer } from "@/components/Footer";
@@ -34,7 +34,7 @@ const Index = () => {
         <MerchSection />
         <CommunitySection />
         <AICreativeSection />
-        <KaraokeSystem />
+        <AmbientMusicPlayer />
         <ContestsSection />
         <ContactSection />
       </main>
