@@ -1,89 +1,249 @@
-import { useState, useRef, useEffect } from "react";
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
-interface Track {
+interface AmbientSound {
   id: number;
   title: string;
-  artist: string;
-  src: string;
+  description: string;
+  // Web Audio API generated sounds
+  type: "wind" | "static" | "drone" | "whispers" | "rain";
 }
 
-const tracks: Track[] = [
-  { id: 1, title: "Stranger Things Theme", artist: "Kyle Dixon & Michael Stein", src: "/audio/track-1.mp3" },
-  { id: 2, title: "Kids", artist: "Kyle Dixon & Michael Stein", src: "/audio/track-2.mp3" },
-  { id: 3, title: "Eulogy", artist: "Kyle Dixon & Michael Stein", src: "/audio/track-3.mp3" },
+const ambientSounds: AmbientSound[] = [
+  { id: 1, title: "Viento del Upside Down", description: "Viento oscuro y sobrenatural", type: "wind" },
+  { id: 2, title: "Estática Dimensional", description: "Interferencia entre dimensiones", type: "static" },
+  { id: 3, title: "Drone Oscuro", description: "Atmósfera tensa y misteriosa", type: "drone" },
+  { id: 4, title: "Susurros del Vacío", description: "Ecos del otro lado", type: "whispers" },
+  { id: 5, title: "Lluvia en Hawkins", description: "Tormenta nocturna en Indiana", type: "rain" },
 ];
+
+// Generate ambient sounds using Web Audio API
+class AmbientGenerator {
+  private ctx: AudioContext | null = null;
+  private gainNode: GainNode | null = null;
+  private nodes: AudioNode[] = [];
+  private isActive = false;
+
+  init() {
+    if (this.ctx) return;
+    this.ctx = new AudioContext();
+    this.gainNode = this.ctx.createGain();
+    this.gainNode.connect(this.ctx.destination);
+    this.gainNode.gain.value = 0.3;
+  }
+
+  setVolume(v: number) {
+    if (this.gainNode) this.gainNode.gain.value = v;
+  }
+
+  stop() {
+    this.nodes.forEach((n) => { try { (n as OscillatorNode).stop?.(); } catch {} });
+    this.nodes = [];
+    this.isActive = false;
+  }
+
+  play(type: AmbientSound["type"]) {
+    if (!this.ctx || !this.gainNode) this.init();
+    this.stop();
+    this.isActive = true;
+
+    const ctx = this.ctx!;
+    const dest = this.gainNode!;
+
+    switch (type) {
+      case "wind": this.createWind(ctx, dest); break;
+      case "static": this.createStatic(ctx, dest); break;
+      case "drone": this.createDrone(ctx, dest); break;
+      case "whispers": this.createWhispers(ctx, dest); break;
+      case "rain": this.createRain(ctx, dest); break;
+    }
+  }
+
+  private createNoise(ctx: AudioContext): AudioBufferSourceNode {
+    const bufferSize = ctx.sampleRate * 4;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.start();
+    this.nodes.push(source);
+    return source;
+  }
+
+  private createWind(ctx: AudioContext, dest: AudioNode) {
+    const noise = this.createNoise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 400;
+    filter.Q.value = 1;
+    // Modulate wind
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.15;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 200;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+    this.nodes.push(lfo);
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.6;
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(dest);
+  }
+
+  private createStatic(ctx: AudioContext, dest: AudioNode) {
+    const noise = this.createNoise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 3000;
+    filter.Q.value = 0.5;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.15;
+    // Intermittent effect
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 2;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.1;
+    lfo.connect(lfoGain);
+    lfoGain.connect(gain.gain);
+    lfo.start();
+    this.nodes.push(lfo);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(dest);
+  }
+
+  private createDrone(ctx: AudioContext, dest: AudioNode) {
+    [55, 82.5, 110, 165].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = i < 2 ? "sine" : "triangle";
+      osc.frequency.value = freq;
+      const gain = ctx.createGain();
+      gain.gain.value = i === 0 ? 0.3 : 0.1;
+      // Subtle detune
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.05 + i * 0.02;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 2;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.detune);
+      lfo.start();
+      osc.connect(gain);
+      gain.connect(dest);
+      osc.start();
+      this.nodes.push(osc, lfo);
+    });
+  }
+
+  private createWhispers(ctx: AudioContext, dest: AudioNode) {
+    // Filtered noise + resonant sweeps
+    const noise = this.createNoise(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 1500;
+    filter.Q.value = 8;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.3;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 1000;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    lfo.start();
+    this.nodes.push(lfo);
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.08;
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(dest);
+
+    // Add subtle drone underneath
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 80;
+    const oscGain = ctx.createGain();
+    oscGain.gain.value = 0.15;
+    osc.connect(oscGain);
+    oscGain.connect(dest);
+    osc.start();
+    this.nodes.push(osc);
+  }
+
+  private createRain(ctx: AudioContext, dest: AudioNode) {
+    // Filtered noise for rain
+    const noise = this.createNoise(ctx);
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = "lowpass";
+    lpf.frequency.value = 8000;
+    const hpf = ctx.createBiquadFilter();
+    hpf.type = "highpass";
+    hpf.frequency.value = 400;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.3;
+    noise.connect(hpf);
+    hpf.connect(lpf);
+    lpf.connect(gain);
+    gain.connect(dest);
+
+    // Thunder rumble (low frequency)
+    const thunder = ctx.createOscillator();
+    thunder.type = "sine";
+    thunder.frequency.value = 40;
+    const tGain = ctx.createGain();
+    tGain.gain.value = 0.1;
+    const tLfo = ctx.createOscillator();
+    tLfo.frequency.value = 0.08;
+    const tLfoGain = ctx.createGain();
+    tLfoGain.gain.value = 0.1;
+    tLfo.connect(tLfoGain);
+    tLfoGain.connect(tGain.gain);
+    tLfo.start();
+    thunder.connect(tGain);
+    tGain.connect(dest);
+    thunder.start();
+    this.nodes.push(thunder, tLfo);
+  }
+
+  get playing() { return this.isActive; }
+}
+
+const generator = new AmbientGenerator();
 
 export const AmbientMusicPlayer = () => {
   const [currentTrack, setCurrentTrack] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = isMuted ? 0 : volume / 100;
+    generator.setVolume(isMuted ? 0 : volume / 100 * 0.5);
   }, [volume, isMuted]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.src = tracks[currentTrack].src;
+  const togglePlay = useCallback(() => {
     if (isPlaying) {
-      audio.play().catch(() => {});
-    }
-  }, [currentTrack]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateProgress = () => setProgress(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration || 0);
-    const handleEnded = () => nextTrack();
-
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("ended", handleEnded);
-    return () => {
-      audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("loadedmetadata", updateDuration);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [currentTrack]);
-
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
+      generator.stop();
+      setIsPlaying(false);
     } else {
-      audio.play().catch(() => {});
+      generator.play(ambientSounds[currentTrack].type);
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
-  };
+  }, [isPlaying, currentTrack]);
 
-  const nextTrack = () => setCurrentTrack((prev) => (prev + 1) % tracks.length);
-  const prevTrack = () => setCurrentTrack((prev) => (prev - 1 + tracks.length) % tracks.length);
+  const selectTrack = useCallback((idx: number) => {
+    setCurrentTrack(idx);
+    generator.play(ambientSounds[idx].type);
+    setIsPlaying(true);
+  }, []);
 
-  const seek = (val: number[]) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = val[0];
-    setProgress(val[0]);
-  };
-
-  const formatTime = (t: number) => {
-    const m = Math.floor(t / 60);
-    const s = Math.floor(t % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  const nextTrack = () => selectTrack((currentTrack + 1) % ambientSounds.length);
+  const prevTrack = () => selectTrack((currentTrack - 1 + ambientSounds.length) % ambientSounds.length);
 
   return (
     <section id="musica" className="py-20 md:py-32 relative">
@@ -91,29 +251,27 @@ export const AmbientMusicPlayer = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Music className="w-6 h-6 text-neon-cyan" />
-            <h2 className="font-title text-3xl md:text-4xl tracking-[0.15em] text-foreground">
-              MÚSICA AMBIENTE
-            </h2>
-            <Music className="w-6 h-6 text-neon-cyan" />
+            <Waves className="w-6 h-6 text-neon-cyan" />
+            <span className="font-display text-neon-cyan tracking-[0.3em] text-sm">
+              SONIDOS AMBIENTALES
+            </span>
           </div>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Sumérgete en la atmósfera del Upside Down con la banda sonora original de la serie.
+          <h2 className="font-title text-3xl md:text-4xl tracking-[0.15em] text-foreground">
+            ATMÓSFERA DEL <span className="text-neon-red">UPSIDE DOWN</span>
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mt-2">
+            Sonidos atmosféricos generados en tiempo real. Sumérgete en la oscuridad de Hawkins.
           </p>
         </div>
 
         {/* Player Card */}
         <div className="rounded-2xl border border-primary/30 bg-card/60 backdrop-blur-sm p-6 md:p-8 shadow-[0_0_40px_hsl(var(--neon-red)/0.1)]">
-          {/* Track List */}
+          {/* Sound List */}
           <div className="space-y-2 mb-8">
-            {tracks.map((track, idx) => (
+            {ambientSounds.map((sound, idx) => (
               <button
-                key={track.id}
-                onClick={() => {
-                  setCurrentTrack(idx);
-                  setIsPlaying(true);
-                  setTimeout(() => audioRef.current?.play().catch(() => {}), 100);
-                }}
+                key={sound.id}
+                onClick={() => selectTrack(idx)}
                 className={`w-full flex items-center gap-4 p-3 rounded-lg transition-all duration-300 text-left ${
                   idx === currentTrack
                     ? "bg-primary/15 border border-primary/40 shadow-[0_0_15px_hsl(var(--neon-red)/0.15)]"
@@ -130,39 +288,25 @@ export const AmbientMusicPlayer = () => {
                       <span className="w-[3px] bg-primary-foreground animate-pulse" style={{ height: "40%", animationDelay: "300ms" }} />
                     </div>
                   ) : (
-                    <span className="text-xs font-bold">{idx + 1}</span>
+                    <Waves className="w-4 h-4" />
                   )}
                 </div>
                 <div className="min-w-0">
                   <p className={`text-sm font-medium truncate ${idx === currentTrack ? "text-primary" : "text-foreground"}`}>
-                    {track.title}
+                    {sound.title}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  <p className="text-xs text-muted-foreground truncate">{sound.description}</p>
                 </div>
               </button>
             ))}
           </div>
 
           {/* Now Playing */}
-          <div className="text-center mb-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Reproduciendo</p>
-            <p className="font-display text-lg text-foreground">{tracks[currentTrack].title}</p>
-            <p className="text-sm text-muted-foreground">{tracks[currentTrack].artist}</p>
-          </div>
-
-          {/* Progress */}
-          <div className="mb-4">
-            <Slider
-              value={[progress]}
-              max={duration || 100}
-              step={0.5}
-              onValueChange={seek}
-              className="cursor-pointer"
-            />
-            <div className="flex justify-between mt-1">
-              <span className="text-xs text-muted-foreground">{formatTime(progress)}</span>
-              <span className="text-xs text-muted-foreground">{formatTime(duration)}</span>
-            </div>
+          <div className="text-center mb-6">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
+              {isPlaying ? "Reproduciendo" : "Selecciona un sonido"}
+            </p>
+            <p className="font-display text-lg text-foreground">{ambientSounds[currentTrack].title}</p>
           </div>
 
           {/* Controls */}
@@ -170,12 +314,7 @@ export const AmbientMusicPlayer = () => {
             <Button variant="ghost" size="icon" onClick={prevTrack}>
               <SkipBack className="w-5 h-5" />
             </Button>
-            <Button
-              variant="neon"
-              size="icon"
-              className="w-14 h-14 rounded-full"
-              onClick={togglePlay}
-            >
+            <Button variant="neon" size="icon" className="w-14 h-14 rounded-full" onClick={togglePlay}>
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
             </Button>
             <Button variant="ghost" size="icon" onClick={nextTrack}>
@@ -198,8 +337,6 @@ export const AmbientMusicPlayer = () => {
           </div>
         </div>
       </div>
-
-      <audio ref={audioRef} preload="auto" />
     </section>
   );
 };
