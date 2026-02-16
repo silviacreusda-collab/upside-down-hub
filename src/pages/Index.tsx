@@ -10,6 +10,8 @@ import { ContestsSection } from "@/components/ContestsSection";
 import { ContactSection } from "@/components/ContactSection";
 import { Footer } from "@/components/Footer";
 import { FloatingParticles } from "@/components/FloatingParticles";
+import { AIChatbot } from "@/components/AIChatbot";
+import { AIRecommendations } from "@/components/AIRecommendations";
 import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 
 const Index = () => {
@@ -34,6 +36,7 @@ const Index = () => {
         <MerchSection />
         <CommunitySection />
         <AICreativeSection />
+        <AIRecommendations />
         <AmbientMusicPlayer />
         <ContestsSection />
         <ContactSection />
@@ -41,6 +44,9 @@ const Index = () => {
       
       {/* Footer */}
       <Footer />
+
+      {/* Floating AI Chatbot */}
+      <AIChatbot />
     </div>
   );
 };
