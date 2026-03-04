@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_generated_content: {
+        Row: {
+          category: string
+          content: string
+          content_type: string
+          created_at: string
+          excerpt: string
+          id: string
+          title: string
+          trending: boolean
+        }
+        Insert: {
+          category?: string
+          content: string
+          content_type?: string
+          created_at?: string
+          excerpt: string
+          id?: string
+          title: string
+          trending?: boolean
+        }
+        Update: {
+          category?: string
+          content?: string
+          content_type?: string
+          created_at?: string
+          excerpt?: string
+          id?: string
+          title?: string
+          trending?: boolean
+        }
+        Relationships: []
+      }
       community_members: {
         Row: {
           email: string
