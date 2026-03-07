@@ -2,8 +2,24 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function sanitizeInput(input: string | undefined, maxLength: number): string {
+  if (!input) return '';
+  return input
+    .trim()
+    .replace(/[<>{}[\]\\|`~"]/g, '')
+    .replace(/[\r\n]+/g, ' ')
+    .slice(0, maxLength);
+}
+
+function validateDate(date: string | undefined): string {
+  if (!date) return '';
+  const dateRegex = /^\d{1,2}[/\-]\d{1,2}[/\-]\d{4}$/;
+  if (!dateRegex.test(date.trim())) return '';
+  return date.trim().slice(0, 10);
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,13 +34,26 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Validate type
+    const allowedTypes = ["foto", "poster", "tarjeta"];
+    if (type && !allowedTypes.includes(type)) {
+      return new Response(
+        JSON.stringify({ error: "Tipo de generación no válido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanitize all user inputs
+    const safeName = sanitizeInput(userName, 15);
+    const safeRecipient = sanitizeInput(recipientName, 15);
+    const safeDate = validateDate(birthDate);
+
     // Build messages based on type and whether user photo is provided
     let messages: { role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }[] = [];
     
     switch (type) {
       case "foto":
         if (userPhoto) {
-          // Edit mode: use user's photo
           messages = [
             {
               role: "user",
@@ -50,8 +79,8 @@ serve(async (req) => {
         }
         break;
         
-      case "poster":
-        const posterName = userName || "FAN";
+      case "poster": {
+        const posterName = safeName || "FAN";
         if (userPhoto) {
           messages = [
             {
@@ -84,10 +113,11 @@ serve(async (req) => {
           ];
         }
         break;
+      }
         
-      case "tarjeta":
-        const cardRecipient = recipientName || userName || "AMIGO/A";
-        const cardDate = birthDate || "¡PRONTO!";
+      case "tarjeta": {
+        const cardRecipient = safeRecipient || safeName || "AMIGO/A";
+        const cardDate = safeDate || "¡PRONTO!";
         if (userPhoto) {
           messages = [
             {
@@ -121,6 +151,7 @@ serve(async (req) => {
           ];
         }
         break;
+      }
         
       default:
         messages = [
@@ -163,18 +194,17 @@ serve(async (req) => {
         );
       }
       
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error("Error al generar la imagen. Intenta de nuevo.");
     }
 
     const data = await response.json();
     console.log("AI response received successfully");
 
-    // Extract the image from the response
     const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     const textContent = data.choices?.[0]?.message?.content || "Tu creación está lista";
 
     if (!imageUrl) {
-      console.error("No image in response:", JSON.stringify(data).substring(0, 500));
+      console.error("No image in response");
       throw new Error("No se pudo generar la imagen. Intenta de nuevo.");
     }
 
