@@ -92,6 +92,21 @@ export const AICreativeSection = () => {
     
     const feature = aiFeatures.find((f) => f.action === currentAction);
     
+    // Validate inputs
+    const namePattern = /^[a-zA-ZáéíóúñÁÉÍÓÚÑüÜ ]*$/;
+    if (userName && !namePattern.test(userName)) {
+      toast({ title: "Nombre inválido", description: "Solo letras y espacios.", variant: "destructive" });
+      return;
+    }
+    if (recipientName && !namePattern.test(recipientName)) {
+      toast({ title: "Nombre destinatario inválido", description: "Solo letras y espacios.", variant: "destructive" });
+      return;
+    }
+    if (birthDate && !/^\d{1,2}[/\-]\d{1,2}[/\-]\d{4}$/.test(birthDate)) {
+      toast({ title: "Fecha inválida", description: "Usa formato DD/MM/YYYY.", variant: "destructive" });
+      return;
+    }
+    
     // Validation
     if (feature?.requiresPhoto && !userPhoto) {
       toast({
